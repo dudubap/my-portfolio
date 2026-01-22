@@ -141,4 +141,11 @@ else:
         df_display['잔고'] = df_display['잔고'].apply(lambda x: f"{x:,.0f} 원")
         df_display['원금'] = df_display['원금'].apply(lambda x: f"{x:,.0f} 원")
         df_display['수익'] = df_display['수익'].apply(lambda x: f"{x:,.0f} 원")
-        df_display['수익률'] = df_display['수
+       df_display['수익률'] = df_display['수익률'].apply(lambda x: f"{x:,.2f}%")
+        
+        # 깔끔하게 컬럼 순서 정리해서 보여주기
+        st.dataframe(
+            df_display[['종목', '티커', '수량', '현재가', '잔고', '수익', '수익률']], 
+            use_container_width=True,
+            hide_index=True
+        )
