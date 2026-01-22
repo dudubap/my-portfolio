@@ -1,43 +1,58 @@
 import streamlit as st
-from github import Github
+import pandas as pd
+import plotly.express as px
+from portfolio_manager import PortfolioManager
+from market_data import fetch_current_price, get_usd_krw_rate
+import time
 
-st.title("📂 저장소 목록 조회기")
+# 페이지 설정
+st.set_page_config(page_title="은퇴 포트폴리오 트래커", layout="wide")
 
-# 1. 로그인
+# 포트폴리오 매니저 초기화 (GitHub 연동 버전)
 try:
-    token = st.secrets["github"]["token"]
-    g = Github(token)
-    user = g.get_user()
-    st.success(f"✅ 로그인 성공: {user.login}님")
+    manager = PortfolioManager()
 except Exception as e:
-    st.error(f"로그인 실패: {e}")
+    st.error(f"GitHub 연결 오류: {e}")
     st.stop()
 
-# 2. 내 눈에 보이는 저장소 다 출력해보기
-st.write("---")
-st.header("👀 이 토큰으로 볼 수 있는 저장소 목록")
+# --- 사이드바: 설정 및 기능 ---
+st.sidebar.header("⚙️ 기능")
 
-try:
-    # 모든 저장소 가져오기 (비공개 포함)
-    repos = user.get_repos()
-    
-    found = False
-    repo_list = []
-    
-    for repo in repos:
-        repo_list.append(repo.full_name)
-        # 우리가 찾는 저장소가 있는지 확인
-        if repo.full_name == st.secrets["github"]["repo_name"]:
-            found = True
-            st.success(f"🎉 찾았다!! -> {repo.full_name}")
-            st.write("권한도 있고 이름도 정확합니다. 이제 원래 코드로 돌아가도 됩니다.")
-            break
-            
-    if not found:
-        st.error(f"❌ '{st.secrets['github']['repo_name']}' 저장소가 목록에 없습니다.")
-        st.write("👇 **현재 보이는 저장소들:**")
-        st.json(repo_list)
-        st.warning("위 목록에 없다면 'repo' 체크박스를 체크하지 않고 토큰을 만든 것입니다.")
+# 새로고침 버튼
+if st.sidebar.button("🔄 가격 새로고침"):
+    st.rerun()
 
-except Exception as e:
-    st.error(f"목록 불러오기 실패: {e}")
+st.sidebar.divider()
+
+# 자산 추가 폼
+st.sidebar.header("➕ 자산 추가하기")
+with st.sidebar.form("add_asset_form"):
+    st.caption("예: 삼성전자(005930.KS), NVDA, BTC-USD")
+    ticker = st.text_input("종목 코드").upper().strip()
+    asset_type = st.selectbox("자산 종류", ["Stock", "ETF", "Crypto", "Cash"])
+    quantity = st.number_input("보유 수량", min_value=0.0, format="%.6f")
+    avg_cost = st.number_input("평단가 (매수 통화 기준)", min_value=0.0, format="%.2f")
+    
+    submitted = st.form_submit_button("자산 추가")
+    if submitted and ticker and quantity > 0:
+        with st.spinner("GitHub에 저장 중..."):
+            manager.add_asset(ticker, quantity, avg_cost, asset_type)
+        st.sidebar.success(f"{ticker} 저장 완료!")
+        time.sleep(1) # GitHub 반영 시간 벌기
+        st.rerun()
+
+# 자산 삭제 기능
+st.sidebar.header("🗑️ 자산 삭제")
+portfolio_list = manager.get_portfolio()
+if portfolio_list:
+    tickers = [item['ticker'] for item in portfolio_list]
+    to_delete = st.sidebar.selectbox("삭제할 종목 선택", ["선택 안 함"] + tickers)
+    if to_delete != "선택 안 함":
+        if st.sidebar.button("삭제 확인"):
+            with st.spinner("삭제 중..."):
+                manager.remove_asset(to_delete)
+            st.success(f"{to_delete} 삭제 완료!")
+            time.sleep(1)
+            st.rerun()
+
+# --- 메인 화면 ---
