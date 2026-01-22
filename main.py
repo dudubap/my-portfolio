@@ -130,20 +130,18 @@ else:
             st.subheader("자산군")
             st.plotly_chart(px.pie(df, values='잔고', names='종류', hole=0.4), use_container_width=True)
 
-        # 5. 상세 표 (여기가 핵심! 보기 좋게 문자열로 변환)
+        # 5. 상세 표
         st.subheader("📋 상세 보유 현황")
         
-        # 보여주기용 데이터프레임 복사
         df_display = df.copy()
         
-        # 콤마(,) 찍기 포맷팅 적용
+        # 콤마(,) 찍기 포맷팅
         df_display['현재가'] = df_display['현재가'].apply(lambda x: f"{x:,.0f} 원")
         df_display['잔고'] = df_display['잔고'].apply(lambda x: f"{x:,.0f} 원")
         df_display['원금'] = df_display['원금'].apply(lambda x: f"{x:,.0f} 원")
         df_display['수익'] = df_display['수익'].apply(lambda x: f"{x:,.0f} 원")
-       df_display['수익률'] = df_display['수익률'].apply(lambda x: f"{x:,.2f}%")
+        df_display['수익률'] = df_display['수익률'].apply(lambda x: f"{x:,.2f}%")
         
-        # 깔끔하게 컬럼 순서 정리해서 보여주기
         st.dataframe(
             df_display[['종목', '티커', '수량', '현재가', '잔고', '수익', '수익률']], 
             use_container_width=True,
