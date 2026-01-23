@@ -1,1 +1,8 @@
-[]
+[
+    {
+        "ticker": "VOO",
+        "quantity": 58.0,
+        "avg_cost": 547.6755,
+        "type": "ETF"
+    }
+]
