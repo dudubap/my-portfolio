@@ -4,5 +4,11 @@
         "quantity": 58.0,
         "avg_cost": 547.6755,
         "type": "ETF"
+    },
+    {
+        "ticker": "SCHD",
+        "quantity": 15.0,
+        "avg_cost": 27.34,
+        "type": "Stock"
     }
 ]
