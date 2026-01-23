@@ -10,5 +10,11 @@
         "quantity": 15.0,
         "avg_cost": 27.34,
         "type": "Stock"
+    },
+    {
+        "ticker": "O",
+        "quantity": 70.0,
+        "avg_cost": 57.16,
+        "type": "Stock"
     }
 ]
