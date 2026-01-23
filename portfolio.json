@@ -16,5 +16,11 @@
         "quantity": 70.0,
         "avg_cost": 57.16,
         "type": "Stock"
+    },
+    {
+        "ticker": "VNQ",
+        "quantity": 4.0,
+        "avg_cost": 95.28,
+        "type": "ETF"
     }
 ]
