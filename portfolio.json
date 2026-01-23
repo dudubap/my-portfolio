@@ -22,5 +22,11 @@
         "quantity": 4.0,
         "avg_cost": 95.28,
         "type": "ETF"
+    },
+    {
+        "ticker": "TMF",
+        "quantity": 71.0,
+        "avg_cost": 52.59,
+        "type": "ETF"
     }
 ]
