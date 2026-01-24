@@ -193,11 +193,7 @@ if portfolio:
     
     st.divider()
     
-   # ... (위쪽 코드는 그대로 두세요) ...
-    
-  # ... (위쪽 코드는 그대로 두세요) ...
-    
-   # ... (위쪽 코드는 건드리지 마세요) ...
+ # ... (위쪽 코드는 건드리지 마세요) ...
     
     # 차트 영역
     c1, c2 = st.columns(2)
@@ -207,29 +203,34 @@ if portfolio:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # 1. 월별 데이터 ('년-월' 문자열로 변환)
-        df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
-        df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
+        # [핵심 변경] 주별(Weekly) 데이터로 변경 ('년-주차'로 그룹화)
+        # %Y-%U: 2026년 4번째 주 -> 2026-04
+        df_hist['week_id'] = df_hist['date'].dt.strftime('%Y-%W')
         
-        # 2. 그래프 그리기
-        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 성장 로드맵 (Goal: 30억)")
+        # 각 주(Week)의 가장 마지막 데이터만 남김
+        df_weekly = df_hist.sort_values('date').groupby('week_id').tail(1)
         
-        # [핵심 변경] Y축을 30억(target)까지 강제로 늘리기
-        # 0 ~ 목표금액의 1.1배까지 범위를 고정
+        # 그래프 X축에 보여줄 날짜 포맷 (예: 01-25)
+        df_weekly['display_date'] = df_weekly['date'].dt.strftime('%m-%d')
+        
+        # 그래프 그리기
+        fig = px.line(df_weekly, x='display_date', y='value', markers=True, title="📈 자산 성장 로드맵 (주간 Weekly)")
+        
+        # Y축을 30억(target)까지 고정 (목표 시각화)
         fig.update_yaxes(
             range=[0, target * 1.1], 
-            showticklabels=False, # 숫자는 지저분하니 숨김
+            showticklabels=False, 
             showgrid=False,
             title=None
         )
         
-        # X축 설정 (시간 빼고 '년-월'만)
+        # X축 설정
         fig.update_xaxes(
             title=None,
-            type='category' # 날짜가 아닌 카테고리로 취급해서 '년-월' 그대로 표시
+            type='category' # 날짜 간격을 균등하게 배분
         )
         
-        # 30억 목표 라인 (초록색 점선) 추가
+        # 30억 목표 라인
         fig.add_hline(
             y=target, 
             line_dash="dot", 
@@ -238,7 +239,7 @@ if portfolio:
             annotation_position="top right"
         )
         
-        # 그래프 선 스타일 (빨강)
+        # 선 스타일
         fig.update_traces(
             line_color='#FF4B4B',
             hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>' 
@@ -246,16 +247,16 @@ if portfolio:
         
         c1.plotly_chart(fig, use_container_width=True)
     else:
-        c1.info("데이터가 쌓이면 자산 성장 그래프가 나타납니다.")
+        c1.info("데이터가 쌓이면 주간 그래프가 그려집니다.")
     
-    # 자산 비중 파이 차트 (글자 가로 고정 버전)
+    # 자산 비중 파이 차트 (가로 고정 유지)
     df = pd.DataFrame(data)
     if not df.empty:
         fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
         fig_pie.update_traces(
             textposition='inside',
             textinfo='percent+label',
-            insidetextorientation='horizontal' # 가로 고정
+            insidetextorientation='horizontal'
         )
         c2.plotly_chart(fig_pie, use_container_width=True)
     
