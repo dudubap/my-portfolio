@@ -84,5 +84,12 @@
         "avg_cost": 432.66,
         "type": "Stock",
         "dividend_yield": 0.0
+    },
+    {
+        "ticker": "KO",
+        "quantity": 7.3395,
+        "avg_cost": 68.4,
+        "type": "Stock",
+        "dividend_yield": 0.0
     }
 ]
