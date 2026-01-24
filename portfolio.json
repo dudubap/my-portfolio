@@ -46,5 +46,11 @@
         "quantity": 9.292266,
         "avg_cost": 125.92,
         "type": "Stock"
+    },
+    {
+        "ticker": "QLD",
+        "quantity": 40.141776,
+        "avg_cost": 51.36,
+        "type": "ETF"
     }
 ]
