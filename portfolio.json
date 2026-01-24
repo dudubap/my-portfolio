@@ -12,12 +12,6 @@
         "type": "Stock"
     },
     {
-        "ticker": "O",
-        "quantity": 70.0,
-        "avg_cost": 57.16,
-        "type": "Stock"
-    },
-    {
         "ticker": "VNQ",
         "quantity": 4.0,
         "avg_cost": 95.28,
@@ -76,5 +70,12 @@
         "quantity": 26.14354,
         "avg_cost": 52.94,
         "type": "ETF"
+    },
+    {
+        "ticker": "O",
+        "quantity": 18.9122,
+        "avg_cost": 55.87,
+        "type": "Stock",
+        "dividend_yield": 0.0
     }
 ]
