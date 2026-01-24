@@ -9,7 +9,7 @@ def get_usd_krw_rate():
         hist = ticker.history(period="1d")
         if not hist.empty:
             return hist['Close'].iloc[-1]
-        return 1450.0 # 에러 시 기본값
+        return 1450.0 
     except:
         return 1450.0
 
@@ -34,62 +34,50 @@ def fetch_current_price(ticker_symbol):
 @st.cache_data(ttl=86400)
 def fetch_dividend_info(ticker_symbol):
     """
-    배당률(%)과 성장률(%)을 아주 보수적으로 계산하는 함수
+    배당률 오류 방지 (30% 이상은 0으로 처리)
     """
     try:
         t = yf.Ticker(ticker_symbol)
         info = t.info
         
-        # --- [1] 현재 배당률(Yield) 구하기 ---
-        # 전략: 배당률(%)보다는 '주당 배당금(Rate)'이 훨씬 정확하므로 그걸 먼저 찾음
-        
-        div_rate = info.get('dividendRate') # 예: 삼성전자 1444원
-        current_price = info.get('currentPrice')
-        
-        # 가격 정보가 info에 없으면 history에서 가져옴
-        if not current_price:
-            h = t.history(period="1d")
-            if not h.empty:
-                current_price = h['Close'].iloc[-1]
-        
+        # --- [1] 배당률 계산 ---
         yield_pct = 0.0
         
-        # Case A: '주당 배당금' 데이터가 확실히 있을 때 (가장 정확)
-        if div_rate and current_price and current_price > 0:
+        # 방식 A: 배당금 액수(Rate)로 직접 계산 (제일 정확)
+        current_price = info.get('currentPrice') or info.get('previousClose')
+        div_rate = info.get('dividendRate')
+        
+        if div_rate and current_price:
             yield_pct = (div_rate / current_price) * 100
-            
-        # Case B: 주당 배당금은 없는데, 'Trailing Annual Rate'(작년 기준)는 있을 때 (ETF용)
-        elif info.get('trailingAnnualDividendRate') and current_price and current_price > 0:
-             # ETF는 이게 더 정확함
+        
+        # 방식 B: Trailing Annual (ETF용)
+        elif info.get('trailingAnnualDividendRate') and current_price:
             yield_pct = (info.get('trailingAnnualDividendRate') / current_price) * 100
             
-        # Case C: 다 없고 그냥 'dividendYield' 퍼센트만 있을 때
+        # 방식 C: 야후가 주는 Yield 그대로 사용
         elif info.get('dividendYield'):
             yield_pct = info.get('dividendYield') * 100
 
-        # --- [2] 배당 성장률 (CAGR) 구하기 ---
+        # 🚨 [안전장치] 배당률이 30% 넘으면 데이터 오류로 간주하고 0 처리
+        if yield_pct > 30.0:
+            yield_pct = 0.0
+
+        # --- [2] 성장률 계산 ---
         growth_rate = 0.0
         try:
             divs = t.dividends
             if len(divs) > 0:
-                # 연도별 합계 (올해 데이터가 불완전하면 제외하기 위해 로직 강화)
                 annual = divs.resample('Y').sum()
-                
-                # 데이터가 충분하면 (최소 4년)
                 if len(annual) >= 4:
-                    # '작년' 확정 배당금 vs '5년 전' 확정 배당금 비교
-                    # (올해는 아직 진행중이라 제외하는 게 안전함)
-                    last_full_year = annual.iloc[-2] # 작년
-                    past_year = annual.iloc[-6] if len(annual) >= 6 else annual.iloc[0]
-                    
-                    if past_year > 0 and last_full_year > 0:
+                    last = annual.iloc[-2] # 작년 확정치
+                    past = annual.iloc[-6] if len(annual) >= 6 else annual.iloc[0]
+                    if past > 0 and last > 0:
                         years = len(annual) - 2 if len(annual) < 6 else 4
-                        growth_rate = ((last_full_year / past_year) ** (1/years) - 1) * 100
-        except Exception:
+                        growth_rate = ((last / past) ** (1/years) - 1) * 100
+        except:
             growth_rate = 0.0
             
         return yield_pct, growth_rate
 
-    except Exception as e:
-        # 에러나면 그냥 0, 0 반환 (터지는 것 방지)
+    except:
         return 0.0, 0.0
