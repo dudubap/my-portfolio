@@ -73,8 +73,8 @@
     },
     {
         "ticker": "O",
-        "quantity": 18.9122,
-        "avg_cost": 55.87,
+        "quantity": 88.9122,
+        "avg_cost": 56.88686832628144,
         "type": "Stock",
         "dividend_yield": 0.0
     }
