@@ -6,7 +6,7 @@ from market_data import fetch_current_price, get_usd_krw_rate
 import time
 
 # 1. 페이지 설정
-st.set_page_config(page_title="은퇴 포트폴리오 트래커", layout="wide")
+st.set_page_config(page_title="은퇴 포트폴리오 30억 플랜", layout="wide")
 
 # 2. 매니저 연결
 try:
@@ -16,134 +16,74 @@ except Exception as e:
     st.stop()
 
 # --- 사이드바 ---
-st.sidebar.header("⚙️ 메뉴")
-if st.sidebar.button("🔄 가격 새로고침"):
-    st.rerun()
+st.sidebar.header("⚙️ 포트폴리오 관리")
 
-st.sidebar.divider()
+# 탭 나누기 (신규 vs 수정)
+tab1, tab2 = st.sidebar.tabs(["➕ 신규 등록", "📝 수정/추매"])
 
-# 은퇴 목표 설정
-st.sidebar.header("🎯 은퇴 목표")
-target_asset = st.sidebar.number_input("목표 금액 (원)", value=2000000000, step=100000000, format="%d")
-monthly_input = st.sidebar.number_input("월 추가 투자금 (원)", value=1500000, step=100000, format="%d")
-exp_return_rate = st.sidebar.slider("목표 연 수익률 (%)", 0.0, 30.0, 8.0)
-
-st.sidebar.divider()
-
-# 자산 추가
-st.sidebar.header("➕ 자산 추가")
-with st.sidebar.form("add"):
-    ticker = st.text_input("종목 코드 (예: 005930.KS, NVDA)").upper().strip()
-    atype = st.selectbox("종류", ["Stock", "ETF", "Crypto", "Cash"])
-    qty = st.number_input("수량", min_value=0.0, format="%.6f")
-    cost = st.number_input("평단가", min_value=0.0, format="%.2f")
-    if st.form_submit_button("저장"):
-        if ticker:
-            with st.spinner("저장 중..."):
-                manager.add_asset(ticker, qty, cost, atype)
-            time.sleep(1)
-            st.rerun()
-
-# 자산 삭제
-portfolio = manager.get_portfolio()
-if portfolio:
-    st.sidebar.header("🗑️ 삭제")
-    del_ticker = st.sidebar.selectbox("삭제할 종목", ["선택"] + [i['ticker'] for i in portfolio])
-    if del_ticker != "선택" and st.sidebar.button("삭제 실행"):
-        manager.remove_asset(del_ticker)
-        st.rerun()
-
-# --- 메인 화면 ---
-st.title("🚀 나의 은퇴 현황판")
-
-if not portfolio:
-    st.info("사이드바에서 자산을 추가해주세요.")
-else:
-    # 데이터 계산
-    with st.spinner("계산 중..."):
-        usd = get_usd_krw_rate()
-        st.caption(f"환율: 1 USD = {usd:,.2f} KRW")
+# [Tab 1] 아예 새로운 종목 추가
+with tab1:
+    st.subheader("새로운 종목 추가")
+    with st.form("add_new"):
+        new_ticker = st.text_input("종목 코드 (예: TSLA)").upper().strip()
+        new_type = st.selectbox("종류", ["Stock", "ETF", "Crypto", "Cash"])
+        new_qty = st.number_input("수량", min_value=0.0, format="%.6f")
+        new_cost = st.number_input("평단가", min_value=0.0, format="%.2f")
+        new_div = st.number_input("예상 배당률 (%)", min_value=0.0, max_value=100.0, step=0.1, format="%.2f")
         
-        data = []
-        total_val = 0
-        total_inv = 0
-        
-        for item in portfolio:
-            p, cur, name = fetch_current_price(item['ticker'])
-            if p is None: p, name, cur = 0, item['ticker'], "KRW"
-            
-            # 화폐 단위 변환
-            multiplier = usd if cur == 'USD' else 1
-            
-            val = p * item['quantity'] * multiplier
-            cost = item['avg_cost'] * item['quantity'] * multiplier
-            current_p_krw = p * multiplier
-            
-            data.append({
-                "종목": name, 
-                "티커": item['ticker'], 
-                "종류": item['type'],
-                "수량": item['quantity'],
-                "현재가": current_p_krw,     # 숫자 (계산용)
-                "잔고": val,               # 숫자 (차트용)
-                "원금": cost,              # 숫자 (계산용)
-                "수익": val - cost,        # 숫자 (계산용)
-                "수익률": ((val-cost)/cost*100) if cost>0 else 0
-            })
-            total_val += val
-            total_inv += cost
+        if st.form_submit_button("신규 등록"):
+            if new_ticker and new_qty > 0:
+                with st.spinner("등록 중..."):
+                    manager.add_asset(new_ticker, new_qty, new_cost, new_type, new_div)
+                time.sleep(1)
+                st.rerun()
 
-    if total_val > 0:
-        # 1. 은퇴 목표 달성률
-        progress = min(total_val / target_asset, 1.0)
-        st.write(f"### 🚩 목표 달성률: **{progress*100:.2f}%** (목표: {target_asset:,.0f} 원)")
-        st.progress(progress)
+# [Tab 2] 기존 종목 수정 (계산기 기능)
+with tab2:
+    st.subheader("기존 자산 수정 / 추가 매수")
+    portfolio = manager.get_portfolio()
+    
+    if not portfolio:
+        st.info("먼저 '신규 등록' 탭에서 자산을 추가하세요.")
+    else:
+        # 1. 수정할 종목 선택
+        tickers = [item['ticker'] for item in portfolio]
+        selected_ticker = st.selectbox("종목 선택", tickers)
         
-        # 2. 시뮬레이션 메시지
-        if monthly_input > 0 and total_val < target_asset:
-            r = exp_return_rate / 100 / 12
-            current = total_val
-            months = 0
-            while current < target_asset and months < 600:
-                current = current * (1 + r) + monthly_input
-                months += 1
-            
-            years = months // 12
-            remain_months = months % 12
-            st.info(f"💡 매월 **{monthly_input:,.0f}원** 투자 시, **{years}년 {remain_months}개월 뒤** 은퇴 가능! (연 수익률 {exp_return_rate}% 가정)")
-
-        st.divider()
-
-        # 3. 핵심 지표 (큰 글씨)
-        c1, c2, c3 = st.columns(3)
-        c1.metric("총 자산", f"{total_val:,.0f} 원")
-        c2.metric("투자 원금", f"{total_inv:,.0f} 원")
-        c3.metric("총 수익", f"{total_val-total_inv:,.0f} 원", f"{(total_val-total_inv)/total_inv*100:.2f}%")
+        # 선택한 종목의 현재 정보 가져오기
+        current_asset = next(item for item in portfolio if item['ticker'] == selected_ticker)
+        cur_qty = current_asset['quantity']
+        cur_cost = current_asset['avg_cost']
+        cur_div = current_asset.get('dividend_yield', 0.0)
         
-        # 4. 차트 (숫자 데이터 사용)
-        c1, c2 = st.columns(2)
-        df = pd.DataFrame(data)
-        with c1:
-            st.subheader("비중")
-            st.plotly_chart(px.pie(df, values='잔고', names='종목', hole=0.4), use_container_width=True)
-        with c2:
-            st.subheader("자산군")
-            st.plotly_chart(px.pie(df, values='잔고', names='종류', hole=0.4), use_container_width=True)
-
-        # 5. 상세 표
-        st.subheader("📋 상세 보유 현황")
+        st.info(f"📊 **현재 상태**\n- 보유: {cur_qty:,.2f}주\n- 평단: {cur_cost:,.0f}원")
         
-        df_display = df.copy()
+        # 수정 모드 선택
+        edit_mode = st.radio("작업 선택", ["추가 매수 (물타기)", "직접 수정 (오타 정정)"])
         
-        # 콤마(,) 찍기 포맷팅
-        df_display['현재가'] = df_display['현재가'].apply(lambda x: f"{x:,.0f} 원")
-        df_display['잔고'] = df_display['잔고'].apply(lambda x: f"{x:,.0f} 원")
-        df_display['원금'] = df_display['원금'].apply(lambda x: f"{x:,.0f} 원")
-        df_display['수익'] = df_display['수익'].apply(lambda x: f"{x:,.0f} 원")
-        df_display['수익률'] = df_display['수익률'].apply(lambda x: f"{x:,.2f}%")
-        
-        st.dataframe(
-            df_display[['종목', '티커', '수량', '현재가', '잔고', '수익', '수익률']], 
-            use_container_width=True,
-            hide_index=True
-        )
+        with st.form("update_existing"):
+            if edit_mode == "추가 매수 (물타기)":
+                st.caption("👇 이번에 산 것만 입력하세요. 알아서 합쳐줍니다.")
+                added_qty = st.number_input("추가 매수 수량 (+)", min_value=0.0, format="%.6f")
+                added_price = st.number_input("매수 단가 (가격)", min_value=0.0, format="%.2f")
+                
+                # 계산 로직
+                new_total_qty = cur_qty + added_qty
+                if new_total_qty > 0:
+                    new_avg_cost = ((cur_qty * cur_cost) + (added_qty * added_price)) / new_total_qty
+                else:
+                    new_avg_cost = cur_cost
+                
+                # 미리보기
+                if added_qty > 0:
+                    st.markdown(f"""
+                    **🔄 변경 예상 결과:**
+                    - 수량: {cur_qty} ➝ **{new_total_qty:,.2f}**
+                    - 평단: {cur_cost:,.0f} ➝ **{new_avg_cost:,.0f}**
+                    """)
+                    
+            else: # 직접 수정
+                st.caption("👇 데이터를 덮어씁니다.")
+                new_total_qty = st.number_input("총 수량", value=float(cur_qty), format="%.6f")
+                new_avg_cost = st.number_input("총 평단가", value=float(cur_cost), format="%.2f")
+                new_div_
