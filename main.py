@@ -1,8 +1,7 @@
-import streamlit as st
+importimport streamlit as st
 import pandas as pd
 import plotly.express as px
 from portfolio_manager import PortfolioManager
-# [추가] get_market_indices 함수 임포트
 from market_data import fetch_current_price, get_usd_krw_rate, get_market_indices
 import time
 
@@ -49,11 +48,10 @@ with tab2:
         
         st.info(f"📊 보유: {cur_asset['quantity']:,.2f}주 / 평단: {symbol}{cur_asset['avg_cost']:,.2f}")
         
-        edit_mode = st.radio("작업 선택", ["📈 추가 매수 (물타기)", "📉 부분 매도 (익절/손절)", "📝 단순 정보 수정"])
+        edit_mode = st.radio("작업 선택", ["📈 추가 매수", "📉 부분 매도", "📝 정보 수정"])
         
         with st.form("edit"):
             if edit_mode.startswith("📈"):
-                st.caption(f"👇 새로 산 수량과 가격을 입력하세요.")
                 add_q = st.number_input("추가 매수 수량 (+)", min_value=0.0, format="%.6f")
                 add_p = st.number_input("매수 단가", min_value=0.0, format="%.2f")
                 org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
@@ -62,16 +60,14 @@ with tab2:
                 final_curr = asset_curr
             
             elif edit_mode.startswith("📉"):
-                st.caption(f"👇 매도한 수량만 입력하세요.")
                 sell_q = st.number_input("매도 수량 (-)", min_value=0.0, max_value=float(cur_asset['quantity']), format="%.6f")
                 org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
                 final_q = org_q - sell_q
                 final_c = org_c 
                 final_curr = asset_curr
-                if final_q == 0: st.warning("⚠️ 전량 매도 (목록에서 사라짐)")
+                if final_q == 0: st.warning("⚠️ 전량 매도 (삭제됨)")
 
             else:
-                st.caption("정보 수정")
                 final_q = st.number_input("총 수량", value=float(cur_asset['quantity']))
                 final_c = st.number_input("총 평단가", value=float(cur_asset['avg_cost']))
                 curr_idx = 0 if asset_curr == 'USD' else 1
@@ -102,25 +98,25 @@ rate = 8.0
 
 st.title("🚀 나의 은퇴 현황판 (Goal: 30억)")
 
-# [NEW] 시장 지수 전광판 (4단)
+# [NEW] 시장 지수 전광판 (5단으로 확장 + VIX 추가)
 indices = get_market_indices()
-m1, m2, m3, m4 = st.columns(4)
+m1, m2, m3, m4, m5 = st.columns(5)
 
-# 환율
-val, chg, pct = indices["💸 환율 (USD)"]
-m1.metric("💸 환율 (USD)", f"{val:,.2f} 원", f"{chg:.1f} 원 ({pct:.2f}%)")
+val, chg, pct = indices["💸 환율"]
+m1.metric("💸 환율", f"{val:,.0f}원", f"{chg:.1f}원")
 
-# 코스피
 val, chg, pct = indices["🇰🇷 코스피"]
-m2.metric("🇰🇷 코스피", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+m2.metric("🇰🇷 코스피", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
 
-# S&P 500
-val, chg, pct = indices["🇺🇸 S&P 500"]
-m3.metric("🇺🇸 S&P 500", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+val, chg, pct = indices["🇺🇸 S&P500"]
+m3.metric("🇺🇸 S&P500", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
 
-# 나스닥
 val, chg, pct = indices["🇺🇸 나스닥"]
-m4.metric("🇺🇸 나스닥", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+m4.metric("🇺🇸 나스닥", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
+
+# VIX는 낮을수록 좋음 -> 빨간색/파란색 반대로 생각
+val, chg, pct = indices["😨 VIX (공포)"]
+m5.metric("😨 VIX 지수", f"{val:,.2f}", f"{chg:.2f}", delta_color="inverse") # 오르면 안좋음(inverse)
 
 st.divider()
 
@@ -161,7 +157,7 @@ if portfolio:
                 "평가금액": val_krw, 
                 "매수금액": cost_krw, 
                 "수익": val_krw - cost_krw,
-                "수익률": ((val_krw-cost_krw)/cost_krw*100) if cost_krw>0 else 0,
+                "수익률": ((val_krw-cost_krw)/cost_krw) if cost_krw>0 else 0, # %단위 아님 (0.05)
                 "매수통화": my_curr
             })
             tot_val += val_krw
@@ -169,7 +165,6 @@ if portfolio:
 
         if tot_val > 0: manager.update_history(tot_val)
 
-    # UI 표시
     if tot_val > 0:
         prog = min(tot_val/target, 1.0)
         st.write(f"### 🚩 목표 달성률: **{prog*100:.2f}%** (목표: {target:,.0f} 원)")
@@ -195,57 +190,69 @@ if portfolio:
     
     st.divider()
     
-    # 차트 영역
-    c1, c2 = st.columns(2)
+    # [차트 영역 업그레이드]
+    c1, c2 = st.columns([2, 1]) # 차트 크기 비율 조정 (왼쪽을 더 넓게)
     
+    # 1. 주간 성장 차트
     hist_list = manager.get_history()
     if len(hist_list) > 0:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # 주간(Weekly) 데이터
         df_hist['week_id'] = df_hist['date'].dt.strftime('%Y-%W')
         df_weekly = df_hist.sort_values('date').groupby('week_id').tail(1)
         df_weekly['display_date'] = df_weekly['date'].dt.strftime('%m-%d')
         
-        fig = px.line(df_weekly, x='display_date', y='value', markers=True, title="📈 자산 성장 로드맵 (주간 Weekly)")
+        fig = px.line(df_weekly, x='display_date', y='value', markers=True, title="📈 자산 성장 (주간)")
         fig.update_yaxes(range=[0, target * 1.1], showticklabels=False, showgrid=False, title=None)
         fig.update_xaxes(title=None, type='category')
-        fig.add_hline(y=target, line_dash="dot", line_color="#2ECC71", annotation_text="🏁 Goal: 30억")
+        fig.add_hline(y=target, line_dash="dot", line_color="#2ECC71", annotation_text="🏁 Goal")
         fig.update_traces(line_color='#FF4B4B', hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>')
         c1.plotly_chart(fig, use_container_width=True)
     else:
-        c1.info("데이터가 쌓이면 그래프가 그려집니다.")
+        c1.info("데이터가 없습니다.")
     
-    # 파이 차트
+    # 2. 비중 차트 (Toggle 기능 추가)
     df = pd.DataFrame(data)
     if not df.empty:
-        fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
+        # 탭을 만들어서 "종목별" vs "자산군별" 선택 가능하게 함
+        pie_type = c2.radio("비중 보기 기준", ["종목별", "자산군별 (Stock/ETF)"], horizontal=True)
+        
+        if pie_type == "종목별":
+            fig_pie = px.pie(df, values='평가금액', names='종목', hole=0.5)
+        else:
+            fig_pie = px.pie(df, values='평가금액', names='종류', hole=0.5) # Stock, ETF 등
+            
+        fig_pie.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10))
         fig_pie.update_traces(textposition='inside', textinfo='percent+label', insidetextorientation='horizontal')
         c2.plotly_chart(fig_pie, use_container_width=True)
     
-    # 상세 표
+    # [상세 표 업그레이드 - 수익률 막대 그래프]
     st.subheader("📋 상세 현황")
     df_show = df.copy()
-    display_cols = ['종목', '수량', '현재가(KRW)', '평가금액', '매수금액', '수익', '수익률']
-    df_final = df_show[display_cols].copy()
-
+    
     st.dataframe(
-        df_final,
+        df_show,
         use_container_width=True,
         hide_index=True,
+        column_order=["종목", "종류", "수량", "평가금액", "수익", "수익률"], # 보여줄 순서
         column_config={
-            "종목": st.column_config.TextColumn("종목"),
-            "수량": st.column_config.NumberColumn("수량", format="%.4f"),
-            "현재가(KRW)": st.column_config.NumberColumn("현재가", format="%d 원"),
+            "종목": st.column_config.TextColumn("종목", help="티커명"),
+            "종류": st.column_config.TextColumn("Type"),
+            "수량": st.column_config.NumberColumn("수량", format="%.2f"),
             "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
-            "매수금액": st.column_config.NumberColumn("투자원금", format="%d 원"),
             "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
-            "수익률": st.column_config.NumberColumn("수익률", format="%.2f %%")
+            # 여기가 핵심! 막대 그래프로 보여줌
+            "수익률": st.column_config.ProgressColumn(
+                "수익률 (%)",
+                format="%.2f%%",
+                min_value=-0.5, # -50%
+                max_value=0.5,  # +50%
+            )
         }
     )
 
     if not df.empty:
-        best_asset = df.loc[df['수익'].idxmax()]
-        worst_asset = df.loc[df['수익'].idxmin()]
-        st.caption(f"👑 **효자:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원) | 💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)")
+        best = df.loc[df['수익'].idxmax()]
+        worst = df.loc[df['수익'].idxmin()]
+        st.caption(f"👑 Best: **{best['종목']}** (+{best['수익']:,.0f}원)  |  💧 Worst: **{worst['종목']}** ({worst['수익']:,.0f}원)")
