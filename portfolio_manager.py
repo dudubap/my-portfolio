@@ -35,11 +35,18 @@ class PortfolioManager:
         self._load_history()
 
     def _load_data(self):
-        """포트폴리오 읽기"""
+        """포트폴리오 읽기 (디버깅 모드)"""
         try:
             contents = self.repo.get_contents(FILE_PATH)
             self.portfolio = json.loads(contents.decoded_content.decode("utf-8"))
-        except:
+            # 성공하면 조용히 넘어감
+        except Exception as e:
+            # 실패하면 왜 실패했는지 화면에 크게 띄움
+            if "404" in str(e):
+                st.warning(f"⚠️ GitHub 저장소에 '{FILE_PATH}' 파일이 없습니다. (자산을 하나 추가하면 생성됩니다!)")
+            else:
+                st.error(f"❌ 데이터를 불러오다가 에러가 났습니다:\n{e}")
+                # 혹시 JSON 형식이 깨졌을 수도 있으니 확인 필요
             self.portfolio = []
 
     def _load_history(self):
@@ -110,3 +117,4 @@ class PortfolioManager:
 
     def get_portfolio(self):
         return self.portfolio
+
