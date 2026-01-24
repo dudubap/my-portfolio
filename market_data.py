@@ -1,3 +1,4 @@
+# market_data.py 전체를 이걸로 덮어씌우세요 (VIX 추가됨)
 import yfinance as yf
 import streamlit as st
 
@@ -21,7 +22,6 @@ def fetch_current_price(ticker_symbol):
         
         price = h['Close'].iloc[-1]
         
-        # 한국 주식(.KS, .KQ)은 무조건 KRW
         if ticker_symbol.upper().endswith(".KS") or ticker_symbol.upper().endswith(".KQ"):
             currency = "KRW"
         else:
@@ -32,17 +32,17 @@ def fetch_current_price(ticker_symbol):
     except:
         return None, "KRW", ticker_symbol
 
-# [추가됨] 주요 시장 지수 4개 가져오기
 @st.cache_data(ttl=600)
 def get_market_indices():
     """
-    환율, 코스피, S&P500, 나스닥의 현재가와 등락폭을 가져옵니다.
+    주요 지수 + VIX(공포지수) 가져오기
     """
     tickers = {
-        "💸 환율 (USD)": "KRW=X",
+        "💸 환율": "KRW=X",
         "🇰🇷 코스피": "^KS11",
-        "🇺🇸 S&P 500": "^GSPC",
-        "🇺🇸 나스닥": "^IXIC"
+        "🇺🇸 S&P500": "^GSPC",
+        "🇺🇸 나스닥": "^IXIC",
+        "😨 VIX (공포)": "^VIX"  # [추가됨] 월가 공포지수
     }
     
     data = {}
@@ -50,15 +50,13 @@ def get_market_indices():
     for name, symbol in tickers.items():
         try:
             t = yf.Ticker(symbol)
-            # 5일치 가져오는 이유: 주말/휴일이 껴있을 때 전일 종가(Close)를 안전하게 찾기 위해
             hist = t.history(period="5d")
             
             if len(hist) >= 2:
-                current = hist['Close'].iloc[-1]   # 오늘 현재가
-                prev = hist['Close'].iloc[-2]      # 어제 종가
-                change = current - prev            # 변동액
-                pct = (change / prev) * 100        # 변동률(%)
-                
+                current = hist['Close'].iloc[-1]
+                prev = hist['Close'].iloc[-2]
+                change = current - prev
+                pct = (change / prev) * 100
                 data[name] = (current, change, pct)
             else:
                 data[name] = (0, 0, 0)
