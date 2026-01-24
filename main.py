@@ -195,6 +195,8 @@ if portfolio:
     
    # ... (위쪽 코드는 그대로 두세요) ...
     
+  # ... (위쪽 코드는 그대로 두세요) ...
+    
     # 차트 영역
     c1, c2 = st.columns(2)
     
@@ -207,7 +209,7 @@ if portfolio:
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
-        # [유지] 심플한 우상향 그래프
+        # 심플한 우상향 그래프 (유지)
         fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 우상향 곡선")
         fig.update_yaxes(showticklabels=False, title=None, showgrid=False) 
         fig.update_xaxes(title=None)
@@ -224,10 +226,11 @@ if portfolio:
     if not df.empty:
         fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
         
-        # [수정됨] 글자를 밖으로 빼서 가로로 고정! ('outside')
+        # [수정됨] 글자 안쪽(inside) + 무조건 가로(horizontal) 고정!
         fig_pie.update_traces(
-            textposition='outside',  # 👈 여기가 핵심!
-            textinfo='percent+label'
+            textposition='inside',
+            textinfo='percent+label',
+            insidetextorientation='horizontal' # 👈 이게 핵심입니다!
         )
         c2.plotly_chart(fig_pie, use_container_width=True)
     
