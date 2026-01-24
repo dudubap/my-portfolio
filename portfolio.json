@@ -58,5 +58,11 @@
         "quantity": 4.019422,
         "avg_cost": 162.67,
         "type": "Stock"
+    },
+    {
+        "ticker": "PM",
+        "quantity": 3.287267,
+        "avg_cost": 150.98,
+        "type": "Stock"
     }
 ]
