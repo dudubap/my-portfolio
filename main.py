@@ -205,60 +205,60 @@ if portfolio:
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
-        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 월별 자산 추이 (Monthly)")
-        fig.update_xaxes(title_text='월 (Month)')
-        fig.update_yaxes(title_text='총 자산 (KRW)')
+        # [핵심 변경] 깔끔한 추세선 그래프
+        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 우상향 곡선")
+        
+        # Y축(왼쪽 숫자) 아예 없애기 & X축 깔끔하게
+        fig.update_yaxes(showticklabels=False, title=None, showgrid=False) 
+        fig.update_xaxes(title=None)
+        
+        # 마우스 올렸을 때만 금액 보이게 설정 (콤마 포함)
+        fig.update_traces(
+            line_color='#FF4B4B', # 강렬한 빨간색 (상승의 색)
+            hovertemplate='<b>%{x}</b><br>총 자산: %{y:,.0f} 원<extra></extra>' 
+        )
         
         c1.plotly_chart(fig, use_container_width=True)
     else:
-        c1.info("데이터가 쌓이면 월별 그래프가 나타납니다.")
+        c1.info("데이터가 쌓이면 아름다운 우상향 곡선이 그려집니다.")
     
     # 자산 비중 파이 차트
     df = pd.DataFrame(data)
     if not df.empty:
-        c2.plotly_chart(px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.4), use_container_width=True)
+        # 도넛 차트로 변경 (더 세련됨)
+        fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
+        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+        c2.plotly_chart(fig_pie, use_container_width=True)
     
-
-    # 상세 표 (컬러링 적용)
+    # 상세 표 (컬러링 적용 버전)
     st.subheader("📋 상세 현황")
     
-    # 1. 데이터 프레임 준비
     df_show = df.copy()
     
-    # 2. 색상을 칠하기 위한 함수 정의 (한국식: 수익=빨강, 손실=파랑)
-    def color_profit(val):
-        color = 'red' if val > 0 else 'blue' if val < 0 else 'gray'
-        return f'color: {color}'
-
-    # 3. 보여줄 컬럼만 선택
+    # 보여줄 컬럼만 선택
     display_cols = ['종목', '수량', '현재가(KRW)', '평가금액', '매수금액', '수익', '수익률']
     df_final = df_show[display_cols].copy()
 
-    # 4. 숫자 포맷팅 (콤마 찍기) - 스타일링을 위해 원본 숫자는 유지하고 보여줄 때만 바꿈
-    # Streamlit의 column_config를 쓰면 정렬과 포맷팅이 더 예쁩니다.
     st.dataframe(
         df_final,
         use_container_width=True,
         hide_index=True,
         column_config={
-            "종목": st.column_config.TextColumn("종목", help="자산 이름"),
+            "종목": st.column_config.TextColumn("종목"),
             "수량": st.column_config.NumberColumn("수량", format="%.4f"),
             "현재가(KRW)": st.column_config.NumberColumn("현재가", format="%d 원"),
             "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
             "매수금액": st.column_config.NumberColumn("투자원금", format="%d 원"),
             "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
-            "수익률": st.column_config.NumberColumn(
-                "수익률", 
-                format="%.2f %%", # 퍼센트 표시
-            )
+            "수익률": st.column_config.NumberColumn("수익률", format="%.2f %%")
         }
     )
 
-    # 5. (보너스) 수익/손실 종목 요약 한줄 브리핑
-    best_asset = df.loc[df['수익'].idxmax()]
-    worst_asset = df.loc[df['수익'].idxmin()]
-    
-    st.caption(f"""
-    👑 **효자 종목:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원)  |  
-    💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)
-    """)
+    # 요약 브리핑
+    if not df.empty:
+        best_asset = df.loc[df['수익'].idxmax()]
+        worst_asset = df.loc[df['수익'].idxmin()]
+        st.caption(f"""
+        👑 **효자:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원)  |  
+        💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)
+        """)
