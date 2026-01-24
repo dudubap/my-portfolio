@@ -52,5 +52,11 @@
         "quantity": 40.141776,
         "avg_cost": 51.36,
         "type": "ETF"
+    },
+    {
+        "ticker": "JNJ",
+        "quantity": 4.019422,
+        "avg_cost": 162.67,
+        "type": "Stock"
     }
 ]
