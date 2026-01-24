@@ -34,5 +34,11 @@
         "quantity": 3.7468,
         "avg_cost": 189.57,
         "type": "Stock"
+    },
+    {
+        "ticker": "GLD",
+        "quantity": 3.1665,
+        "avg_cost": 302.31,
+        "type": "ETF"
     }
 ]
