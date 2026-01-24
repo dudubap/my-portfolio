@@ -193,6 +193,8 @@ if portfolio:
     
     st.divider()
     
+   # ... (위쪽 코드는 그대로 두세요) ...
+    
     # 차트 영역
     c1, c2 = st.columns(2)
     
@@ -205,19 +207,14 @@ if portfolio:
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
-        # [핵심 변경] 깔끔한 추세선 그래프
+        # [유지] 심플한 우상향 그래프
         fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 우상향 곡선")
-        
-        # Y축(왼쪽 숫자) 아예 없애기 & X축 깔끔하게
         fig.update_yaxes(showticklabels=False, title=None, showgrid=False) 
         fig.update_xaxes(title=None)
-        
-        # 마우스 올렸을 때만 금액 보이게 설정 (콤마 포함)
         fig.update_traces(
-            line_color='#FF4B4B', # 강렬한 빨간색 (상승의 색)
+            line_color='#FF4B4B',
             hovertemplate='<b>%{x}</b><br>총 자산: %{y:,.0f} 원<extra></extra>' 
         )
-        
         c1.plotly_chart(fig, use_container_width=True)
     else:
         c1.info("데이터가 쌓이면 아름다운 우상향 곡선이 그려집니다.")
@@ -225,17 +222,19 @@ if portfolio:
     # 자산 비중 파이 차트
     df = pd.DataFrame(data)
     if not df.empty:
-        # 도넛 차트로 변경 (더 세련됨)
         fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label')
+        
+        # [수정됨] 글자를 밖으로 빼서 가로로 고정! ('outside')
+        fig_pie.update_traces(
+            textposition='outside',  # 👈 여기가 핵심!
+            textinfo='percent+label'
+        )
         c2.plotly_chart(fig_pie, use_container_width=True)
     
-    # 상세 표 (컬러링 적용 버전)
+    # 상세 표 (기존 유지)
     st.subheader("📋 상세 현황")
     
     df_show = df.copy()
-    
-    # 보여줄 컬럼만 선택
     display_cols = ['종목', '수량', '현재가(KRW)', '평가금액', '매수금액', '수익', '수익률']
     df_final = df_show[display_cols].copy()
 
@@ -254,7 +253,6 @@ if portfolio:
         }
     )
 
-    # 요약 브리핑
     if not df.empty:
         best_asset = df.loc[df['수익'].idxmax()]
         worst_asset = df.loc[df['수익'].idxmin()]
