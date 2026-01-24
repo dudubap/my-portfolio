@@ -28,5 +28,11 @@
         "quantity": 71.0,
         "avg_cost": 52.59,
         "type": "ETF"
+    },
+    {
+        "ticker": "GOOGL",
+        "quantity": 3.7468,
+        "avg_cost": 189.57,
+        "type": "Stock"
     }
 ]
