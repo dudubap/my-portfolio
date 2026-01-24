@@ -8,113 +8,78 @@ HISTORY_PATH = "history.json"
 
 class PortfolioManager:
     def __init__(self):
-        # 1. 안전 장치: Secrets가 제대로 있는지 확인
         if "github" not in st.secrets:
-            st.error("🚨 Secrets 설정이 없습니다. Streamlit 대시보드에서 Secrets를 확인해주세요.")
+            st.error("Secrets 설정 확인 필요")
             st.stop()
-            
-        # 2. 정보 가져오기
         try:
-            self.token = st.secrets["github"]["token"]
-            self.repo_name = st.secrets["github"]["repo_name"]
-        except KeyError:
-            st.error("🚨 Secrets 형식이 잘못되었습니다. [github] 아래에 token과 repo_name이 있어야 합니다.")
-            st.stop()
-
-        # 3. GitHub 로그인 및 연결
-        try:
-            self.g = Github(self.token)
-            self.repo = self.g.get_repo(self.repo_name)
+            self.g = Github(st.secrets["github"]["token"])
+            self.repo = self.g.get_repo(st.secrets["github"]["repo_name"])
+            self.portfolio = []
+            self.history = []
+            self._load_data()
+            self._load_history()
         except Exception as e:
-            st.error(f"🚨 GitHub 연결 실패: 저장소 이름({self.repo_name})이나 토큰을 확인하세요.\n에러: {e}")
+            st.error(f"GitHub 연결 실패: {e}")
             st.stop()
-            
-        self.portfolio = []
-        self.history = []
-        self._load_data()
-        self._load_history()
 
     def _load_data(self):
-        """포트폴리오 읽기 (디버깅 모드)"""
         try:
-            contents = self.repo.get_contents(FILE_PATH)
-            self.portfolio = json.loads(contents.decoded_content.decode("utf-8"))
-            # 성공하면 조용히 넘어감
-        except Exception as e:
-            # 실패하면 왜 실패했는지 화면에 크게 띄움
-            if "404" in str(e):
-                st.warning(f"⚠️ GitHub 저장소에 '{FILE_PATH}' 파일이 없습니다. (자산을 하나 추가하면 생성됩니다!)")
-            else:
-                st.error(f"❌ 데이터를 불러오다가 에러가 났습니다:\n{e}")
-                # 혹시 JSON 형식이 깨졌을 수도 있으니 확인 필요
-            self.portfolio = []
+            c = self.repo.get_contents(FILE_PATH)
+            self.portfolio = json.loads(c.decoded_content.decode("utf-8"))
+        except: self.portfolio = []
 
     def _load_history(self):
-        """기록 읽기"""
         try:
-            contents = self.repo.get_contents(HISTORY_PATH)
-            self.history = json.loads(contents.decoded_content.decode("utf-8"))
-        except:
-            self.history = []
+            c = self.repo.get_contents(HISTORY_PATH)
+            self.history = json.loads(c.decoded_content.decode("utf-8"))
+        except: self.history = []
 
     def _save_data(self):
-        """포트폴리오 저장"""
         try:
             json_str = json.dumps(self.portfolio, indent=4, ensure_ascii=False)
             try:
-                contents = self.repo.get_contents(FILE_PATH)
-                self.repo.update_file(contents.path, "Update portfolio", json_str, contents.sha)
+                c = self.repo.get_contents(FILE_PATH)
+                self.repo.update_file(c.path, "Update", json_str, c.sha)
             except:
-                self.repo.create_file(FILE_PATH, "Create portfolio", json_str)
-        except Exception as e:
-            st.error(f"저장 실패: {e}")
+                self.repo.create_file(FILE_PATH, "Create", json_str)
+        except: pass
 
     def _save_history(self):
-        """기록 저장"""
         try:
             json_str = json.dumps(self.history, indent=4, ensure_ascii=False)
             try:
-                contents = self.repo.get_contents(HISTORY_PATH)
-                self.repo.update_file(contents.path, "Update history", json_str, contents.sha)
+                c = self.repo.get_contents(HISTORY_PATH)
+                self.repo.update_file(c.path, "Update Hist", json_str, c.sha)
             except:
-                self.repo.create_file(HISTORY_PATH, "Create history", json_str)
-        except Exception as e:
-            print(f"히스토리 저장 실패: {e}")
+                self.repo.create_file(HISTORY_PATH, "Create Hist", json_str)
+        except: pass
 
-    def update_history(self, total_value):
-        """오늘 자산 기록 (하루 1번)"""
+    def update_history(self, val):
         today = datetime.now().strftime("%Y-%m-%d")
-        
         if not self.history or self.history[-1]['date'] != today:
-            self.history.append({"date": today, "value": total_value})
+            self.history.append({"date": today, "value": val})
             self._save_history()
-        
-        elif self.history[-1]['date'] == today:
-            if self.history[-1]['value'] != total_value:
-                self.history[-1]['value'] = total_value
-                self._save_history()
+        elif self.history[-1]['date'] == today and self.history[-1]['value'] != val:
+            self.history[-1]['value'] = val
+            self._save_history()
+    
+    def get_history(self): return self.history
 
-    def get_history(self):
-        return self.history
-
+    # [중요] dividend_yield 파라미터 부활!
     def add_asset(self, ticker, quantity, avg_cost, asset_type, dividend_yield=0.0):
         self.remove_asset(ticker, save=False)
-        
         asset = {
             "ticker": ticker,
             "quantity": float(quantity),
             "avg_cost": float(avg_cost),
             "type": asset_type,
-            "dividend_yield": float(dividend_yield)
+            "dividend_yield": float(dividend_yield) # 사용자가 입력한 값 저장
         }
         self.portfolio.append(asset)
         self._save_data()
 
     def remove_asset(self, ticker, save=True):
         self.portfolio = [item for item in self.portfolio if item['ticker'] != ticker]
-        if save:
-            self._save_data()
+        if save: self._save_data()
 
-    def get_portfolio(self):
-        return self.portfolio
-
+    def get_portfolio(self): return self.portfolio
