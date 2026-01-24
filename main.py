@@ -1,4 +1,4 @@
-importimport streamlit as st
+import streamlit as st
 import pandas as pd
 import plotly.express as px
 from portfolio_manager import PortfolioManager
@@ -256,3 +256,4 @@ if portfolio:
         best = df.loc[df['수익'].idxmax()]
         worst = df.loc[df['수익'].idxmin()]
         st.caption(f"👑 Best: **{best['종목']}** (+{best['수익']:,.0f}원)  |  💧 Worst: **{worst['종목']}** ({worst['수익']:,.0f}원)")
+
