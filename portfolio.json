@@ -40,5 +40,11 @@
         "quantity": 3.1665,
         "avg_cost": 302.31,
         "type": "ETF"
+    },
+    {
+        "ticker": "NVDA",
+        "quantity": 9.292266,
+        "avg_cost": 125.92,
+        "type": "Stock"
     }
 ]
