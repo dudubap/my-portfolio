@@ -14,13 +14,13 @@ except Exception as e:
 
 # --- 사이드바 ---
 st.sidebar.header("⚙️ 자산 관리")
-tab1, tab2 = st.sidebar.tabs(["➕ 신규 등록", "📝 수정/추매"])
+tab1, tab2 = st.sidebar.tabs(["➕ 신규 등록", "📝 매수/매도/수정"])
 
 # [Tab 1] 신규 등록
 with tab1:
     with st.form("add_new"):
-        st.caption("한국 ETF는 끝에 **.KS**를 붙이세요. (예: 360750.KS)")
-        new_ticker = st.text_input("종목 코드 (예: 005930.KS, SCHD)").upper().strip()
+        st.caption("국내주식은 KRW, 미국주식은 USD를 선택하세요.")
+        new_ticker = st.text_input("종목 코드 (예: 005930.KS, NVDA)").upper().strip()
         new_type = st.selectbox("자산 종류", ["Stock", "ETF", "Crypto", "Cash"])
         new_curr = st.radio("매수 통화", ["USD ($)", "KRW (₩)"], horizontal=True)
         
@@ -35,7 +35,7 @@ with tab1:
                 time.sleep(1)
                 st.rerun()
 
-# [Tab 2] 수정/추매
+# [Tab 2] 매수/매도/수정
 with tab2:
     portfolio = manager.get_portfolio()
     if portfolio:
@@ -48,36 +48,61 @@ with tab2:
         
         st.info(f"📊 보유: {cur_asset['quantity']:,.2f}주 / 평단: {symbol}{cur_asset['avg_cost']:,.2f}")
         
-        edit_mode = st.radio("작업", ["추가 매수 (물타기)", "정보 수정"])
+        # [핵심 변경] 부분 매도 옵션 추가
+        edit_mode = st.radio("작업 선택", ["📈 추가 매수 (물타기/불타기)", "📉 부분 매도 (익절/손절)", "📝 단순 정보 수정"])
         
         with st.form("edit"):
-            if edit_mode == "추가 매수 (물타기)":
-                st.caption(f"👇 추가 매수한 가격을 **{asset_curr}** 기준으로 입력하세요.")
-                add_q = st.number_input("추가 수량", min_value=0.0)
-                add_p = st.number_input("매수 단가", min_value=0.0)
+            # 1. 추가 매수 (수량 증가, 평단가 변화)
+            if edit_mode.startswith("📈"):
+                st.caption(f"👇 새로 산 수량과 가격을 입력하세요. (평단가 자동 계산)")
+                add_q = st.number_input("추가 매수 수량 (+)", min_value=0.0, format="%.6f")
+                add_p = st.number_input("매수 단가", min_value=0.0, format="%.2f")
                 
                 org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
                 final_q = org_q + add_q
+                # 평단가 = (기존총액 + 신규총액) / 총수량
                 final_c = ((org_q*org_c)+(add_q*add_p))/final_q if final_q>0 else org_c
                 final_curr = asset_curr
+            
+            # 2. 부분 매도 (수량 감소, 평단가 유지!)
+            elif edit_mode.startswith("📉"):
+                st.caption(f"👇 팔아버린 수량만 입력하세요. (평단가는 변하지 않습니다)")
+                sell_q = st.number_input("매도 수량 (-)", min_value=0.0, max_value=float(cur_asset['quantity']), format="%.6f")
+                
+                org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
+                final_q = org_q - sell_q
+                final_c = org_c # 매도는 평단가에 영향 없음
+                final_curr = asset_curr
+                
+                if final_q == 0:
+                    st.warning("⚠️ 전량 매도입니다. (수량이 0이 됩니다)")
+
+            # 3. 단순 수정 (오타 정정용)
             else:
+                st.caption("잘못 입력한 정보를 덮어씁니다.")
                 final_q = st.number_input("총 수량", value=float(cur_asset['quantity']))
                 final_c = st.number_input("총 평단가", value=float(cur_asset['avg_cost']))
+                
                 curr_idx = 0 if asset_curr == 'USD' else 1
                 new_curr_str = st.radio("통화 변경", ["USD", "KRW"], index=curr_idx, horizontal=True)
                 final_curr = new_curr_str
 
-            if st.form_submit_button("적용"):
-                manager.add_asset(selected_ticker, final_q, final_c, cur_asset['type'], final_curr)
-                st.rerun()
+            if st.form_submit_button("적용하기"):
+                if final_q < 0:
+                    st.error("수량은 0보다 작을 수 없습니다.")
+                else:
+                    with st.spinner("계산 및 저장 중..."):
+                        manager.add_asset(selected_ticker, final_q, final_c, cur_asset['type'], final_curr)
+                    time.sleep(1)
+                    st.rerun()
 
-# [복구 완료] 자산 삭제 기능
+# 자산 삭제 (전량 매도 후 목록에서 지울 때)
 st.sidebar.divider()
-with st.sidebar.expander("🗑️ 자산 삭제"):
+with st.sidebar.expander("🗑️ 자산 아예 삭제하기"):
     if portfolio:
-        del_ticker = st.selectbox("삭제할 종목 선택", ["선택"] + tickers)
+        del_ticker = st.selectbox("목록에서 지울 종목", ["선택"] + tickers)
         if del_ticker != "선택":
-            st.warning(f"정말 '{del_ticker}'를 삭제하시겠습니까?")
+            st.warning(f"정말 '{del_ticker}'를 목록에서 제거합니까?")
             if st.button("❌ 삭제 실행"):
                 manager.remove_asset(del_ticker)
                 st.success("삭제되었습니다.")
@@ -176,7 +201,7 @@ if portfolio:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # 월별 데이터 처리
+        # 월별 데이터
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
@@ -201,4 +226,3 @@ if portfolio:
     df_show['수익률'] = df_show['수익률'].apply(lambda x: f"{x:,.2f}%")
     
     st.dataframe(df_show[['종목', '티커', '매수통화', '수량', '현재가(KRW)', '매수금액', '평가금액', '수익률']], use_container_width=True, hide_index=True)
-
