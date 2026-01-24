@@ -70,5 +70,11 @@
         "quantity": 3.214373,
         "avg_cost": 211.64,
         "type": "Stock"
+    },
+    {
+        "ticker": "JEPQ",
+        "quantity": 26.14354,
+        "avg_cost": 52.94,
+        "type": "ETF"
     }
 ]
