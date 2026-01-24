@@ -73,7 +73,7 @@ with tab2:
 
 # [복구 완료] 자산 삭제 기능
 st.sidebar.divider()
-with st.sidebar.expander("🗑️ 자산 삭제 (여기 있어요!)"):
+with st.sidebar.expander("🗑️ 자산 삭제"):
     if portfolio:
         del_ticker = st.selectbox("삭제할 종목 선택", ["선택"] + tickers)
         if del_ticker != "선택":
@@ -201,3 +201,4 @@ if portfolio:
     df_show['수익률'] = df_show['수익률'].apply(lambda x: f"{x:,.2f}%")
     
     st.dataframe(df_show[['종목', '티커', '매수통화', '수량', '현재가(KRW)', '매수금액', '평가금액', '수익률']], use_container_width=True, hide_index=True)
+
