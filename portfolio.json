@@ -6,12 +6,6 @@
         "type": "ETF"
     },
     {
-        "ticker": "SCHD",
-        "quantity": 15.0,
-        "avg_cost": 27.34,
-        "type": "Stock"
-    },
-    {
         "ticker": "VNQ",
         "quantity": 4.0,
         "avg_cost": 95.28,
@@ -89,6 +83,13 @@
         "ticker": "KO",
         "quantity": 7.3395,
         "avg_cost": 68.4,
+        "type": "Stock",
+        "dividend_yield": 0.0
+    },
+    {
+        "ticker": "SCHD",
+        "quantity": 53.1356,
+        "avg_cost": 27.49789474476622,
         "type": "Stock",
         "dividend_yield": 0.0
     }
