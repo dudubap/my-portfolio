@@ -134,5 +134,12 @@
         "avg_cost": 12632.0,
         "type": "ETF",
         "currency": "KRW"
+    },
+    {
+        "ticker": "458730.KS",
+        "quantity": 398.0,
+        "avg_cost": 12475.0,
+        "type": "ETF",
+        "currency": "KRW"
     }
 ]
