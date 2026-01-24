@@ -19,8 +19,8 @@ tab1, tab2 = st.sidebar.tabs(["➕ 신규 등록", "📝 수정/추매"])
 # [Tab 1] 신규 등록
 with tab1:
     with st.form("add_new"):
-        st.caption("국내주식은 KRW, 미국주식은 USD를 선택하세요.")
-        new_ticker = st.text_input("종목 코드 (예: 005930.KS, NVDA)").upper().strip()
+        st.caption("한국 ETF는 끝에 **.KS**를 붙이세요. (예: 360750.KS)")
+        new_ticker = st.text_input("종목 코드 (예: 005930.KS, SCHD)").upper().strip()
         new_type = st.selectbox("자산 종류", ["Stock", "ETF", "Crypto", "Cash"])
         new_curr = st.radio("매수 통화", ["USD ($)", "KRW (₩)"], horizontal=True)
         
@@ -71,13 +71,28 @@ with tab2:
                 manager.add_asset(selected_ticker, final_q, final_c, cur_asset['type'], final_curr)
                 st.rerun()
 
+# [복구 완료] 자산 삭제 기능
+st.sidebar.divider()
+with st.sidebar.expander("🗑️ 자산 삭제 (여기 있어요!)"):
+    if portfolio:
+        del_ticker = st.selectbox("삭제할 종목 선택", ["선택"] + tickers)
+        if del_ticker != "선택":
+            st.warning(f"정말 '{del_ticker}'를 삭제하시겠습니까?")
+            if st.button("❌ 삭제 실행"):
+                manager.remove_asset(del_ticker)
+                st.success("삭제되었습니다.")
+                time.sleep(1)
+                st.rerun()
+    else:
+        st.caption("삭제할 자산이 없습니다.")
+
 st.sidebar.divider()
 if st.sidebar.button("🔄 새로고침"): st.rerun()
 
 # --- 메인 화면 ---
-target = 3000000000  # 30억 원
-month_inv = 2000000   # 월 200만 원
-rate = 8.0            # 연 수익률 8%
+target = 3000000000
+month_inv = 2000000
+rate = 8.0
 
 st.title("🚀 나의 은퇴 현황판 (Goal: 30억)")
 
@@ -156,19 +171,15 @@ if portfolio:
     # 차트 영역
     c1, c2 = st.columns(2)
     
-    # [핵심 변경] 월별 자산 성장 그래프 로직
     hist_list = manager.get_history()
     if len(hist_list) > 0:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # 1. '년-월' 컬럼 만들기 (예: 2024-01)
+        # 월별 데이터 처리
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
-        
-        # 2. 월별로 그룹화해서 '가장 마지막 날짜' 데이터만 남기기
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
-        # 3. 그래프 그리기 (X축이 2024-01, 2024-02... 로 나옴)
         fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 월별 자산 추이 (Monthly)")
         fig.update_xaxes(title_text='월 (Month)')
         fig.update_yaxes(title_text='총 자산 (KRW)')
