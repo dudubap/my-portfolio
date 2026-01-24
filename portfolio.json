@@ -127,5 +127,12 @@
         "avg_cost": 21665.0,
         "type": "ETF",
         "currency": "KRW"
+    },
+    {
+        "ticker": "0052D0.KS",
+        "quantity": 139.0,
+        "avg_cost": 12632.0,
+        "type": "ETF",
+        "currency": "KRW"
     }
 ]
