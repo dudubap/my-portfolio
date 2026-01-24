@@ -75,10 +75,9 @@ st.sidebar.divider()
 if st.sidebar.button("🔄 새로고침"): st.rerun()
 
 # --- 메인 화면 ---
-# [변경] 지저분한 입력창 제거하고 변수로 고정
 target = 3000000000  # 30억 원
-month_inv = 2000000   # 월 200만 원 (시뮬레이션용)
-rate = 8.0            # 연 수익률 8% (시뮬레이션용)
+month_inv = 2000000   # 월 200만 원
+rate = 8.0            # 연 수익률 8%
 
 st.title("🚀 나의 은퇴 현황판 (Goal: 30억)")
 
@@ -97,7 +96,7 @@ if portfolio:
             
             my_curr = item.get('currency', 'USD')
             
-            # (A) 평가 금액 (현재가 기준)
+            # (A) 평가 금액
             if market_curr == 'USD':
                 val_krw = p * item['quantity'] * usd_rate
                 current_price_krw = p * usd_rate
@@ -105,7 +104,7 @@ if portfolio:
                 val_krw = p * item['quantity']
                 current_price_krw = p
             
-            # (B) 매수 금액 (내 평단가 기준)
+            # (B) 매수 금액
             if my_curr == 'USD':
                 cost_krw = item['avg_cost'] * item['quantity'] * usd_rate
             else:
@@ -130,12 +129,10 @@ if portfolio:
 
     # UI 표시
     if tot_val > 0:
-        # [변경] 목표 달성률 게이지 바 (입력창 없이 깔끔하게 표시)
         prog = min(tot_val/target, 1.0)
         st.write(f"### 🚩 목표 달성률: **{prog*100:.2f}%** (목표: {target:,.0f} 원)")
         st.progress(prog)
         
-        # 시뮬레이션 메시지 (변수로 계산)
         if month_inv > 0 and tot_val < target:
             r = rate / 100 / 12
             current = tot_val
@@ -144,7 +141,7 @@ if portfolio:
                 current = current * (1 + r) + month_inv
                 months += 1
             years, remain = months // 12, months % 12
-            st.info(f"💡 (참고) 현재 속도로 **월 {month_inv/10000:.0f}만원** 투자 시, **{years}년 {remain}개월 뒤** 목표 달성!")
+            st.info(f"💡 현재 속도로 투자 시, **{years}년 {remain}개월 뒤** 목표 달성 예상!")
 
     st.divider()
     
@@ -156,15 +153,34 @@ if portfolio:
     
     st.divider()
     
-    # 차트
+    # 차트 영역
     c1, c2 = st.columns(2)
-    hist = pd.DataFrame(manager.get_history())
-    if not hist.empty:
-        c1.plotly_chart(px.line(hist, x='date', y='value', title="자산 성장"), use_container_width=True)
     
+    # [핵심 변경] 월별 자산 성장 그래프 로직
+    hist_list = manager.get_history()
+    if len(hist_list) > 0:
+        df_hist = pd.DataFrame(hist_list)
+        df_hist['date'] = pd.to_datetime(df_hist['date'])
+        
+        # 1. '년-월' 컬럼 만들기 (예: 2024-01)
+        df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
+        
+        # 2. 월별로 그룹화해서 '가장 마지막 날짜' 데이터만 남기기
+        df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
+        
+        # 3. 그래프 그리기 (X축이 2024-01, 2024-02... 로 나옴)
+        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 월별 자산 추이 (Monthly)")
+        fig.update_xaxes(title_text='월 (Month)')
+        fig.update_yaxes(title_text='총 자산 (KRW)')
+        
+        c1.plotly_chart(fig, use_container_width=True)
+    else:
+        c1.info("데이터가 쌓이면 월별 그래프가 나타납니다.")
+    
+    # 자산 비중 파이 차트
     df = pd.DataFrame(data)
     if not df.empty:
-        c2.plotly_chart(px.pie(df, values='평가금액', names='종목', title="자산 비중", hole=0.4), use_container_width=True)
+        c2.plotly_chart(px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.4), use_container_width=True)
     
     # 상세 표
     st.subheader("📋 상세 현황")
