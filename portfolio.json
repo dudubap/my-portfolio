@@ -64,5 +64,11 @@
         "quantity": 3.287267,
         "avg_cost": 150.98,
         "type": "Stock"
+    },
+    {
+        "ticker": "AMZN",
+        "quantity": 3.214373,
+        "avg_cost": 211.64,
+        "type": "Stock"
     }
 ]
