@@ -65,15 +65,15 @@ class PortfolioManager:
     
     def get_history(self): return self.history
 
-    # [중요] dividend_yield 파라미터 부활!
-    def add_asset(self, ticker, quantity, avg_cost, asset_type, dividend_yield=0.0):
+    # [변경] dividend_yield 삭제 -> currency(매수 통화) 추가
+    def add_asset(self, ticker, quantity, avg_cost, asset_type, currency="USD"):
         self.remove_asset(ticker, save=False)
         asset = {
             "ticker": ticker,
             "quantity": float(quantity),
             "avg_cost": float(avg_cost),
             "type": asset_type,
-            "dividend_yield": float(dividend_yield) # 사용자가 입력한 값 저장
+            "currency": currency # "KRW" or "USD"
         }
         self.portfolio.append(asset)
         self._save_data()
