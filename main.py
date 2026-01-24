@@ -197,6 +197,8 @@ if portfolio:
     
   # ... (위쪽 코드는 그대로 두세요) ...
     
+   # ... (위쪽 코드는 건드리지 마세요) ...
+    
     # 차트 영역
     c1, c2 = st.columns(2)
     
@@ -205,32 +207,55 @@ if portfolio:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # 월별 데이터
+        # 1. 월별 데이터 ('년-월' 문자열로 변환)
         df_hist['YYYY-MM'] = df_hist['date'].dt.strftime('%Y-%m')
         df_monthly = df_hist.sort_values('date').groupby('YYYY-MM').tail(1)
         
-        # 심플한 우상향 그래프 (유지)
-        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 우상향 곡선")
-        fig.update_yaxes(showticklabels=False, title=None, showgrid=False) 
-        fig.update_xaxes(title=None)
+        # 2. 그래프 그리기
+        fig = px.line(df_monthly, x='YYYY-MM', y='value', markers=True, title="📈 자산 성장 로드맵 (Goal: 30억)")
+        
+        # [핵심 변경] Y축을 30억(target)까지 강제로 늘리기
+        # 0 ~ 목표금액의 1.1배까지 범위를 고정
+        fig.update_yaxes(
+            range=[0, target * 1.1], 
+            showticklabels=False, # 숫자는 지저분하니 숨김
+            showgrid=False,
+            title=None
+        )
+        
+        # X축 설정 (시간 빼고 '년-월'만)
+        fig.update_xaxes(
+            title=None,
+            type='category' # 날짜가 아닌 카테고리로 취급해서 '년-월' 그대로 표시
+        )
+        
+        # 30억 목표 라인 (초록색 점선) 추가
+        fig.add_hline(
+            y=target, 
+            line_dash="dot", 
+            line_color="#2ECC71", 
+            annotation_text="🏁 Goal: 30억", 
+            annotation_position="top right"
+        )
+        
+        # 그래프 선 스타일 (빨강)
         fig.update_traces(
             line_color='#FF4B4B',
-            hovertemplate='<b>%{x}</b><br>총 자산: %{y:,.0f} 원<extra></extra>' 
+            hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>' 
         )
+        
         c1.plotly_chart(fig, use_container_width=True)
     else:
-        c1.info("데이터가 쌓이면 아름다운 우상향 곡선이 그려집니다.")
+        c1.info("데이터가 쌓이면 자산 성장 그래프가 나타납니다.")
     
-    # 자산 비중 파이 차트
+    # 자산 비중 파이 차트 (글자 가로 고정 버전)
     df = pd.DataFrame(data)
     if not df.empty:
         fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
-        
-        # [수정됨] 글자 안쪽(inside) + 무조건 가로(horizontal) 고정!
         fig_pie.update_traces(
             textposition='inside',
             textinfo='percent+label',
-            insidetextorientation='horizontal' # 👈 이게 핵심입니다!
+            insidetextorientation='horizontal' # 가로 고정
         )
         c2.plotly_chart(fig_pie, use_container_width=True)
     
