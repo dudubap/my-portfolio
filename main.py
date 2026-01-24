@@ -218,11 +218,47 @@ if portfolio:
     if not df.empty:
         c2.plotly_chart(px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.4), use_container_width=True)
     
-    # 상세 표
+
+    # 상세 표 (컬러링 적용)
     st.subheader("📋 상세 현황")
-    df_show = df.copy()
-    for c in ['현재가(KRW)', '평가금액', '매수금액', '수익']: 
-        df_show[c] = df_show[c].apply(lambda x: f"{x:,.0f} 원")
-    df_show['수익률'] = df_show['수익률'].apply(lambda x: f"{x:,.2f}%")
     
-    st.dataframe(df_show[['종목', '티커', '매수통화', '수량', '현재가(KRW)', '매수금액', '평가금액', '수익률']], use_container_width=True, hide_index=True)
+    # 1. 데이터 프레임 준비
+    df_show = df.copy()
+    
+    # 2. 색상을 칠하기 위한 함수 정의 (한국식: 수익=빨강, 손실=파랑)
+    def color_profit(val):
+        color = 'red' if val > 0 else 'blue' if val < 0 else 'gray'
+        return f'color: {color}'
+
+    # 3. 보여줄 컬럼만 선택
+    display_cols = ['종목', '수량', '현재가(KRW)', '평가금액', '매수금액', '수익', '수익률']
+    df_final = df_show[display_cols].copy()
+
+    # 4. 숫자 포맷팅 (콤마 찍기) - 스타일링을 위해 원본 숫자는 유지하고 보여줄 때만 바꿈
+    # Streamlit의 column_config를 쓰면 정렬과 포맷팅이 더 예쁩니다.
+    st.dataframe(
+        df_final,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "종목": st.column_config.TextColumn("종목", help="자산 이름"),
+            "수량": st.column_config.NumberColumn("수량", format="%.4f"),
+            "현재가(KRW)": st.column_config.NumberColumn("현재가", format="%d 원"),
+            "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
+            "매수금액": st.column_config.NumberColumn("투자원금", format="%d 원"),
+            "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
+            "수익률": st.column_config.NumberColumn(
+                "수익률", 
+                format="%.2f %%", # 퍼센트 표시
+            )
+        }
+    )
+
+    # 5. (보너스) 수익/손실 종목 요약 한줄 브리핑
+    best_asset = df.loc[df['수익'].idxmax()]
+    worst_asset = df.loc[df['수익'].idxmin()]
+    
+    st.caption(f"""
+    👑 **효자 종목:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원)  |  
+    💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)
+    """)
