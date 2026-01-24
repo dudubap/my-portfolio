@@ -148,8 +148,12 @@ if portfolio:
             else:
                 cost_krw = item['avg_cost'] * item['quantity']
             
-            # 수익률 (소수점 형태)
-            roi = ((val_krw - cost_krw) / cost_krw) if cost_krw > 0 else 0
+            # [수정됨] 수익률 계산 (이제 *100을 해서 백분율 숫자로 만듦)
+            # 예: 0.05 -> 5.0
+            if cost_krw > 0:
+                roi = ((val_krw - cost_krw) / cost_krw) * 100 
+            else:
+                roi = 0
             
             data.append({
                 "종목": name, 
@@ -229,7 +233,7 @@ if portfolio:
         fig_pie.update_traces(textposition='inside', textinfo='percent+label', insidetextorientation='horizontal')
         c2.plotly_chart(fig_pie, use_container_width=True)
     
-    # [상세 표 - 심플 버전]
+    # [상세 표]
     st.subheader("📋 상세 현황")
     df_show = df.copy()
     
@@ -244,10 +248,9 @@ if portfolio:
             "수량": st.column_config.NumberColumn("수량", format="%.2f"),
             "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
             "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
-            # [복구 완료] 게이지 바 제거 -> 깔끔한 숫자(%)
             "수익률": st.column_config.NumberColumn(
                 "수익률",
-                format="%.2f %%" 
+                format="%.2f %%" # 5.0 -> "5.00 %" 로 표시
             )
         }
     )
