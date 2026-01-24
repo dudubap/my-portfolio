@@ -120,5 +120,12 @@
         "avg_cost": 122.08,
         "type": "Stock",
         "dividend_yield": 0.0
+    },
+    {
+        "ticker": "360750.KS",
+        "quantity": 75.0,
+        "avg_cost": 21665.0,
+        "type": "ETF",
+        "currency": "KRW"
     }
 ]
