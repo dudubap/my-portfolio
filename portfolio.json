@@ -99,5 +99,12 @@
         "avg_cost": 161.63,
         "type": "Stock",
         "dividend_yield": 0.0
+    },
+    {
+        "ticker": "ARKF",
+        "quantity": 1.7404,
+        "avg_cost": 52.45,
+        "type": "ETF",
+        "dividend_yield": 0.0
     }
 ]
