@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from portfolio_manager import PortfolioManager
-from market_data import fetch_current_price, get_usd_krw_rate
+# [추가] get_market_indices 함수 임포트
+from market_data import fetch_current_price, get_usd_krw_rate, get_market_indices
 import time
 
 st.set_page_config(page_title="은퇴 포트폴리오 30억 플랜", layout="wide")
@@ -48,68 +49,48 @@ with tab2:
         
         st.info(f"📊 보유: {cur_asset['quantity']:,.2f}주 / 평단: {symbol}{cur_asset['avg_cost']:,.2f}")
         
-        # [핵심 변경] 부분 매도 옵션 추가
-        edit_mode = st.radio("작업 선택", ["📈 추가 매수 (물타기/불타기)", "📉 부분 매도 (익절/손절)", "📝 단순 정보 수정"])
+        edit_mode = st.radio("작업 선택", ["📈 추가 매수 (물타기)", "📉 부분 매도 (익절/손절)", "📝 단순 정보 수정"])
         
         with st.form("edit"):
-            # 1. 추가 매수 (수량 증가, 평단가 변화)
             if edit_mode.startswith("📈"):
-                st.caption(f"👇 새로 산 수량과 가격을 입력하세요. (평단가 자동 계산)")
+                st.caption(f"👇 새로 산 수량과 가격을 입력하세요.")
                 add_q = st.number_input("추가 매수 수량 (+)", min_value=0.0, format="%.6f")
                 add_p = st.number_input("매수 단가", min_value=0.0, format="%.2f")
-                
                 org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
                 final_q = org_q + add_q
-                # 평단가 = (기존총액 + 신규총액) / 총수량
                 final_c = ((org_q*org_c)+(add_q*add_p))/final_q if final_q>0 else org_c
                 final_curr = asset_curr
             
-            # 2. 부분 매도 (수량 감소, 평단가 유지!)
             elif edit_mode.startswith("📉"):
-                st.caption(f"👇 팔아버린 수량만 입력하세요. (평단가는 변하지 않습니다)")
+                st.caption(f"👇 매도한 수량만 입력하세요.")
                 sell_q = st.number_input("매도 수량 (-)", min_value=0.0, max_value=float(cur_asset['quantity']), format="%.6f")
-                
                 org_q, org_c = cur_asset['quantity'], cur_asset['avg_cost']
                 final_q = org_q - sell_q
-                final_c = org_c # 매도는 평단가에 영향 없음
+                final_c = org_c 
                 final_curr = asset_curr
-                
-                if final_q == 0:
-                    st.warning("⚠️ 전량 매도입니다. (수량이 0이 됩니다)")
+                if final_q == 0: st.warning("⚠️ 전량 매도 (목록에서 사라짐)")
 
-            # 3. 단순 수정 (오타 정정용)
             else:
-                st.caption("잘못 입력한 정보를 덮어씁니다.")
+                st.caption("정보 수정")
                 final_q = st.number_input("총 수량", value=float(cur_asset['quantity']))
                 final_c = st.number_input("총 평단가", value=float(cur_asset['avg_cost']))
-                
                 curr_idx = 0 if asset_curr == 'USD' else 1
                 new_curr_str = st.radio("통화 변경", ["USD", "KRW"], index=curr_idx, horizontal=True)
                 final_curr = new_curr_str
 
             if st.form_submit_button("적용하기"):
-                if final_q < 0:
-                    st.error("수량은 0보다 작을 수 없습니다.")
-                else:
-                    with st.spinner("계산 및 저장 중..."):
-                        manager.add_asset(selected_ticker, final_q, final_c, cur_asset['type'], final_curr)
-                    time.sleep(1)
-                    st.rerun()
+                with st.spinner("처리 중..."):
+                    manager.add_asset(selected_ticker, final_q, final_c, cur_asset['type'], final_curr)
+                time.sleep(1)
+                st.rerun()
 
-# 자산 삭제 (전량 매도 후 목록에서 지울 때)
 st.sidebar.divider()
 with st.sidebar.expander("🗑️ 자산 아예 삭제하기"):
     if portfolio:
-        del_ticker = st.selectbox("목록에서 지울 종목", ["선택"] + tickers)
-        if del_ticker != "선택":
-            st.warning(f"정말 '{del_ticker}'를 목록에서 제거합니까?")
-            if st.button("❌ 삭제 실행"):
-                manager.remove_asset(del_ticker)
-                st.success("삭제되었습니다.")
-                time.sleep(1)
-                st.rerun()
-    else:
-        st.caption("삭제할 자산이 없습니다.")
+        del_ticker = st.selectbox("삭제할 종목", ["선택"] + tickers)
+        if del_ticker != "선택" and st.button("❌ 삭제 실행"):
+            manager.remove_asset(del_ticker)
+            st.rerun()
 
 st.sidebar.divider()
 if st.sidebar.button("🔄 새로고침"): st.rerun()
@@ -121,10 +102,31 @@ rate = 8.0
 
 st.title("🚀 나의 은퇴 현황판 (Goal: 30억)")
 
+# [NEW] 시장 지수 전광판 (4단)
+indices = get_market_indices()
+m1, m2, m3, m4 = st.columns(4)
+
+# 환율
+val, chg, pct = indices["💸 환율 (USD)"]
+m1.metric("💸 환율 (USD)", f"{val:,.2f} 원", f"{chg:.1f} 원 ({pct:.2f}%)")
+
+# 코스피
+val, chg, pct = indices["🇰🇷 코스피"]
+m2.metric("🇰🇷 코스피", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+
+# S&P 500
+val, chg, pct = indices["🇺🇸 S&P 500"]
+m3.metric("🇺🇸 S&P 500", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+
+# 나스닥
+val, chg, pct = indices["🇺🇸 나스닥"]
+m4.metric("🇺🇸 나스닥", f"{val:,.2f}", f"{chg:.2f} ({pct:.2f}%)")
+
+st.divider()
+
 if portfolio:
     with st.spinner("자산 가치 계산 중..."):
         usd_rate = get_usd_krw_rate()
-        st.caption(f"환율: 1 USD = {usd_rate:,.2f} KRW")
         
         data = []
         tot_val = 0
@@ -193,8 +195,6 @@ if portfolio:
     
     st.divider()
     
- # ... (위쪽 코드는 건드리지 마세요) ...
-    
     # 차트 영역
     c1, c2 = st.columns(2)
     
@@ -203,66 +203,29 @@ if portfolio:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
         
-        # [핵심 변경] 주별(Weekly) 데이터로 변경 ('년-주차'로 그룹화)
-        # %Y-%U: 2026년 4번째 주 -> 2026-04
+        # 주간(Weekly) 데이터
         df_hist['week_id'] = df_hist['date'].dt.strftime('%Y-%W')
-        
-        # 각 주(Week)의 가장 마지막 데이터만 남김
         df_weekly = df_hist.sort_values('date').groupby('week_id').tail(1)
-        
-        # 그래프 X축에 보여줄 날짜 포맷 (예: 01-25)
         df_weekly['display_date'] = df_weekly['date'].dt.strftime('%m-%d')
         
-        # 그래프 그리기
         fig = px.line(df_weekly, x='display_date', y='value', markers=True, title="📈 자산 성장 로드맵 (주간 Weekly)")
-        
-        # Y축을 30억(target)까지 고정 (목표 시각화)
-        fig.update_yaxes(
-            range=[0, target * 1.1], 
-            showticklabels=False, 
-            showgrid=False,
-            title=None
-        )
-        
-        # X축 설정
-        fig.update_xaxes(
-            title=None,
-            type='category' # 날짜 간격을 균등하게 배분
-        )
-        
-        # 30억 목표 라인
-        fig.add_hline(
-            y=target, 
-            line_dash="dot", 
-            line_color="#2ECC71", 
-            annotation_text="🏁 Goal: 30억", 
-            annotation_position="top right"
-        )
-        
-        # 선 스타일
-        fig.update_traces(
-            line_color='#FF4B4B',
-            hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>' 
-        )
-        
+        fig.update_yaxes(range=[0, target * 1.1], showticklabels=False, showgrid=False, title=None)
+        fig.update_xaxes(title=None, type='category')
+        fig.add_hline(y=target, line_dash="dot", line_color="#2ECC71", annotation_text="🏁 Goal: 30억")
+        fig.update_traces(line_color='#FF4B4B', hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>')
         c1.plotly_chart(fig, use_container_width=True)
     else:
-        c1.info("데이터가 쌓이면 주간 그래프가 그려집니다.")
+        c1.info("데이터가 쌓이면 그래프가 그려집니다.")
     
-    # 자산 비중 파이 차트 (가로 고정 유지)
+    # 파이 차트
     df = pd.DataFrame(data)
     if not df.empty:
         fig_pie = px.pie(df, values='평가금액', names='종목', title="📊 자산 비중", hole=0.5)
-        fig_pie.update_traces(
-            textposition='inside',
-            textinfo='percent+label',
-            insidetextorientation='horizontal'
-        )
+        fig_pie.update_traces(textposition='inside', textinfo='percent+label', insidetextorientation='horizontal')
         c2.plotly_chart(fig_pie, use_container_width=True)
     
-    # 상세 표 (기존 유지)
+    # 상세 표
     st.subheader("📋 상세 현황")
-    
     df_show = df.copy()
     display_cols = ['종목', '수량', '현재가(KRW)', '평가금액', '매수금액', '수익', '수익률']
     df_final = df_show[display_cols].copy()
@@ -285,7 +248,4 @@ if portfolio:
     if not df.empty:
         best_asset = df.loc[df['수익'].idxmax()]
         worst_asset = df.loc[df['수익'].idxmin()]
-        st.caption(f"""
-        👑 **효자:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원)  |  
-        💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)
-        """)
+        st.caption(f"👑 **효자:** {best_asset['종목']} (+{best_asset['수익']:,.0f}원) | 💧 **아픈 손가락:** {worst_asset['종목']} ({worst_asset['수익']:,.0f}원)")
