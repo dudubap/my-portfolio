@@ -127,5 +127,12 @@
         "avg_cost": 12632.0,
         "type": "ETF",
         "currency": "KRW"
+    },
+    {
+        "ticker": "TIGER 코리아배당다우존스",
+        "quantity": 139.0,
+        "avg_cost": 12632.0,
+        "type": "ETF",
+        "currency": "KRW"
     }
 ]
