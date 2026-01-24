@@ -92,5 +92,12 @@
         "avg_cost": 27.49789474476622,
         "type": "Stock",
         "dividend_yield": 0.0
+    },
+    {
+        "ticker": "PG",
+        "quantity": 3.8427,
+        "avg_cost": 161.63,
+        "type": "Stock",
+        "dividend_yield": 0.0
     }
 ]
