@@ -121,25 +121,4 @@
         "type": "Stock",
         "dividend_yield": 0.0
     },
-    {
-        "ticker": "0052D0",
-        "quantity": 139.0,
-        "avg_cost": 12632.0,
-        "type": "ETF",
-        "currency": "KRW"
-    },
-    {
-        "ticker": "TIGER 코리아배당다우존스",
-        "quantity": 139.0,
-        "avg_cost": 12632.0,
-        "type": "ETF",
-        "currency": "KRW"
-    },
-    {
-        "ticker": "TIGER 미국S&P500",
-        "quantity": 75.0,
-        "avg_cost": 21665.0,
-        "type": "ETF",
-        "currency": "KRW"
-    }
 ]
