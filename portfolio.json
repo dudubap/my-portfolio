@@ -138,8 +138,8 @@
     },
     {
         "ticker": "VOO",
-        "quantity": 58.0,
-        "avg_cost": 547.6755,
+        "quantity": 134.0,
+        "avg_cost": 596.0685,
         "type": "Stock",
         "currency": "USD"
     }
