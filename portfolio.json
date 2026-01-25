@@ -1,11 +1,5 @@
 [
     {
-        "ticker": "VOO",
-        "quantity": 58.0,
-        "avg_cost": 547.6755,
-        "type": "ETF"
-    },
-    {
         "ticker": "VNQ",
         "quantity": 4.0,
         "avg_cost": 95.28,
@@ -141,5 +135,12 @@
         "avg_cost": 12779.940074906366,
         "type": "ETF",
         "currency": "KRW"
+    },
+    {
+        "ticker": "VOO",
+        "quantity": 134.0,
+        "avg_cost": 596.0685,
+        "type": "ETF",
+        "currency": "USD"
     }
 ]
