@@ -148,8 +148,7 @@ if portfolio:
             else:
                 cost_krw = item['avg_cost'] * item['quantity']
             
-            # [수정됨] 수익률 계산 (이제 *100을 해서 백분율 숫자로 만듦)
-            # 예: 0.05 -> 5.0
+            # 수익률
             if cost_krw > 0:
                 roi = ((val_krw - cost_krw) / cost_krw) * 100 
             else:
@@ -172,90 +171,4 @@ if portfolio:
 
         if tot_val > 0: manager.update_history(tot_val)
 
-    if tot_val > 0:
-        prog = min(tot_val/target, 1.0)
-        st.write(f"### 🚩 목표 달성률: **{prog*100:.2f}%** (목표: {target:,.0f} 원)")
-        st.progress(prog)
-        
-        if month_inv > 0 and tot_val < target:
-            r = rate / 100 / 12
-            current = tot_val
-            months = 0
-            while current < target and months < 600:
-                current = current * (1 + r) + month_inv
-                months += 1
-            years, remain = months // 12, months % 12
-            st.info(f"💡 현재 속도로 투자 시, **{years}년 {remain}개월 뒤** 목표 달성 예상!")
-
-    st.divider()
-    
-    # 핵심 지표
-    c1, c2, c3 = st.columns(3)
-    c1.metric("총 자산", f"{tot_val:,.0f} 원")
-    c2.metric("총 투자원금", f"{tot_inv:,.0f} 원")
-    c3.metric("총 수익", f"{tot_val-tot_inv:,.0f} 원", f"{(tot_val-tot_inv)/tot_inv*100:.2f}%")
-    
-    st.divider()
-    
-    # [차트 영역]
-    c1, c2 = st.columns([2, 1])
-    
-    # 1. 주간 성장 차트
-    hist_list = manager.get_history()
-    if len(hist_list) > 0:
-        df_hist = pd.DataFrame(hist_list)
-        df_hist['date'] = pd.to_datetime(df_hist['date'])
-        
-        df_hist['week_id'] = df_hist['date'].dt.strftime('%Y-%W')
-        df_weekly = df_hist.sort_values('date').groupby('week_id').tail(1)
-        df_weekly['display_date'] = df_weekly['date'].dt.strftime('%m-%d')
-        
-        fig = px.line(df_weekly, x='display_date', y='value', markers=True, title="📈 자산 성장 (주간)")
-        fig.update_yaxes(range=[0, target * 1.1], showticklabels=False, showgrid=False, title=None)
-        fig.update_xaxes(title=None, type='category')
-        fig.add_hline(y=target, line_dash="dot", line_color="#2ECC71", annotation_text="🏁 Goal")
-        fig.update_traces(line_color='#FF4B4B', hovertemplate='<b>%{x}</b><br>자산: %{y:,.0f} 원<extra></extra>')
-        c1.plotly_chart(fig, use_container_width=True)
-    else:
-        c1.info("데이터가 없습니다.")
-    
-    # 2. 비중 차트
-    df = pd.DataFrame(data)
-    if not df.empty:
-        pie_type = c2.radio("비중 보기 기준", ["종목별", "자산군별 (Stock/ETF)"], horizontal=True)
-        
-        if pie_type == "종목별":
-            fig_pie = px.pie(df, values='평가금액', names='종목', hole=0.5)
-        else:
-            fig_pie = px.pie(df, values='평가금액', names='종류', hole=0.5)
-            
-        fig_pie.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10))
-        fig_pie.update_traces(textposition='inside', textinfo='percent+label', insidetextorientation='horizontal')
-        c2.plotly_chart(fig_pie, use_container_width=True)
-    
-    # [상세 표]
-    st.subheader("📋 상세 현황")
-    df_show = df.copy()
-    
-    st.dataframe(
-        df_show,
-        use_container_width=True,
-        hide_index=True,
-        column_order=["종목", "종류", "수량", "평가금액", "수익", "수익률"], 
-        column_config={
-            "종목": st.column_config.TextColumn("종목", help="티커명"),
-            "종류": st.column_config.TextColumn("Type"),
-            "수량": st.column_config.NumberColumn("수량", format="%.2f"),
-            "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
-            "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
-            "수익률": st.column_config.NumberColumn(
-                "수익률",
-                format="%.2f %%" # 5.0 -> "5.00 %" 로 표시
-            )
-        }
-    )
-
-    if not df.empty:
-        best = df.loc[df['수익'].idxmax()]
-        worst = df.loc[df['수익'].idxmin()]
-        st.caption(f"👑 Best: **{best['종목']}** (+{best['수익']:,.0f}원)  |  💧 Worst: **{worst['종목']}** ({worst['수익']:,.0f}원)")
+    if
