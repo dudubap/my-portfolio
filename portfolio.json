@@ -135,12 +135,5 @@
         "avg_cost": 12779.940074906366,
         "type": "ETF",
         "currency": "KRW"
-    },
-    {
-        "ticker": "VOO",
-        "quantity": 134.0,
-        "avg_cost": 596.0685,
-        "type": "ETF",
-        "currency": "USD"
     }
 ]
