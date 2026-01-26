@@ -5,6 +5,37 @@ from portfolio_manager import PortfolioManager
 from market_data import fetch_current_price, get_usd_krw_rate, get_market_indices
 import time
 
+# ==========================================
+# 💰 [설정] 나만의 배당률표 (수동 관리)
+# yfinance가 불안정하므로, 여기에 '연 배당률(%)'을 직접 적어두는 게 가장 확실합니다.
+# 없는 종목은 기본값(1.5%)으로 계산됩니다.
+# ==========================================
+MY_DIVIDEND_RATES = {
+    # [미국 고배당 & 채권]
+    "JEPQ": 9.5,   # 커버드콜
+    "JEPI": 7.5,
+    "O": 5.2,      # 리얼티인컴 (월배당)
+    "SCHD": 3.4,   # 배당성장
+    "VNQ": 3.0,    # 부동산
+    "TMF": 3.2,    # 채권 3배
+    "TLT": 3.8,    # 채권
+    
+    # [미국 우량주 & 지수]
+    "VOO": 1.3,    # S&P500
+    "SPY": 1.3,
+    "QQQ": 0.6,
+    "QLD": 0.3,    # 나스닥 2배
+    "NVDA": 0.03,  # 거의 없음
+    "MSFT": 0.7,
+    "AAPL": 0.5,
+    "KO": 3.1,     # 코카콜라
+    
+    # [한국 ETF 예시]
+    "360750.KS": 3.5, # TIGER 미국배당다우존스
+    "005930.KS": 2.0, # 삼성전자
+}
+# ==========================================
+
 st.set_page_config(page_title="은퇴 포트폴리오 30억 플랜", layout="wide")
 
 try:
@@ -90,43 +121,35 @@ with st.sidebar.expander("🗑️ 자산 아예 삭제하기"):
             st.rerun()
 
 st.sidebar.divider()
+st.sidebar.caption("🔧 시뮬레이션 설정")
+rate = st.sidebar.slider("연 목표 수익률 (%)", 1.0, 20.0, 8.0, step=0.5)
+month_inv = 2000000
+target = 3000000000 
+
 if st.sidebar.button("🔄 새로고침"): st.rerun()
 
 # --- 메인 화면 ---
-target = 3000000000
-month_inv = 2000000
-rate = 8.0
-
 st.title("🚀 나의 은퇴 현황판 (Goal: 30억)")
 
 # [시장 지수 전광판]
 indices = get_market_indices()
 m1, m2, m3, m4, m5 = st.columns(5)
-
-val, chg, pct = indices["💸 환율"]
-m1.metric("💸 환율", f"{val:,.0f}원", f"{chg:.1f}원")
-
-val, chg, pct = indices["🇰🇷 코스피"]
-m2.metric("🇰🇷 코스피", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
-
-val, chg, pct = indices["🇺🇸 S&P500"]
-m3.metric("🇺🇸 S&P500", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
-
-val, chg, pct = indices["🇺🇸 나스닥"]
-m4.metric("🇺🇸 나스닥", f"{val:,.0f}", f"{chg:.0f} ({pct:.1f}%)")
-
-val, chg, pct = indices["😨 VIX (공포)"]
-m5.metric("😨 VIX 지수", f"{val:,.2f}", f"{chg:.2f}", delta_color="inverse")
+idx_list = ["💸 환율", "🇰🇷 코스피", "🇺🇸 S&P500", "🇺🇸 나스닥", "😨 VIX (공포)"]
+for col, name in zip([m1, m2, m3, m4, m5], idx_list):
+    val, chg, pct = indices[name]
+    color = "inverse" if "VIX" in name else "normal"
+    col.metric(name, f"{val:,.2f}", f"{chg:.2f} ({pct:.1f}%)", delta_color=color)
 
 st.divider()
 
 if portfolio:
-    with st.spinner("자산 가치 계산 중..."):
+    with st.spinner("자산 가치 & 배당금 계산 중..."):
         usd_rate = get_usd_krw_rate()
         
         data = []
         tot_val = 0
         tot_inv = 0
+        tot_month_div = 0 # 월 배당금 합계
         
         for item in portfolio:
             p, market_curr, name = fetch_current_price(item['ticker'])
@@ -148,6 +171,12 @@ if portfolio:
             else:
                 cost_krw = item['avg_cost'] * item['quantity']
             
+            # (C) 배당금 계산 (새로 추가된 로직!)
+            # 딕셔너리에서 찾고, 없으면 기본값 1.5% 적용
+            div_yield = MY_DIVIDEND_RATES.get(item['ticker'], 1.5)
+            year_div_krw = val_krw * (div_yield / 100) # 연 배당금
+            month_div_krw = year_div_krw / 12          # 월 배당금
+            
             # 수익률
             if cost_krw > 0:
                 roi = ((val_krw - cost_krw) / cost_krw) * 100 
@@ -164,47 +193,43 @@ if portfolio:
                 "매수금액": cost_krw, 
                 "수익": val_krw - cost_krw,
                 "수익률": roi,
-                "매수통화": my_curr
+                "예상월배당": month_div_krw, # 표에 표시하기 위해 저장
+                "배당률(%)": div_yield
             })
             tot_val += val_krw
             tot_inv += cost_krw
+            tot_month_div += month_div_krw
 
-        if tot_val > 0: manager.update_history(tot_val)
+        if tot_val > 0: 
+            manager.update_history(tot_val)
 
+    # 1. 목표 달성률
     if tot_val > 0:
         prog = min(tot_val/target, 1.0)
         st.write(f"### 🚩 목표 달성률: **{prog*100:.2f}%** (목표: {target:,.0f} 원)")
         st.progress(prog)
-        
-        if month_inv > 0 and tot_val < target:
-            r = rate / 100 / 12
-            current = tot_val
-            months = 0
-            while current < target and months < 600:
-                current = current * (1 + r) + month_inv
-                months += 1
-            years, remain = months // 12, months % 12
-            st.info(f"💡 현재 속도로 투자 시, **{years}년 {remain}개월 뒤** 목표 달성 예상!")
-
+    
     st.divider()
     
-    # 핵심 지표
+    # 2. 핵심 지표 & 배당 현금 흐름 (NEW!)
     c1, c2, c3 = st.columns(3)
     c1.metric("총 자산", f"{tot_val:,.0f} 원")
-    c2.metric("총 투자원금", f"{tot_inv:,.0f} 원")
-    c3.metric("총 수익", f"{tot_val-tot_inv:,.0f} 원", f"{(tot_val-tot_inv)/tot_inv*100:.2f}%")
+    c2.metric("총 수익", f"{tot_val-tot_inv:,.0f} 원", f"{(tot_val-tot_inv)/tot_inv*100:.2f}%")
+    
+    # [치킨 지수 로직 적용] 🍗
+    chicken_count = tot_month_div / 20000 # 치킨 1마리 2만원 가정
+    c3.metric("💰 월 예상 배당금", f"{tot_month_div:,.0f} 원", f"치킨 {chicken_count:.1f}마리 가능 🍗")
     
     st.divider()
     
     # [차트 영역]
     c1, c2 = st.columns([2, 1])
     
-    # 1. 주간 성장 차트
+    # 성장 차트
     hist_list = manager.get_history()
     if len(hist_list) > 0:
         df_hist = pd.DataFrame(hist_list)
         df_hist['date'] = pd.to_datetime(df_hist['date'])
-        
         df_hist['week_id'] = df_hist['date'].dt.strftime('%Y-%W')
         df_weekly = df_hist.sort_values('date').groupby('week_id').tail(1)
         df_weekly['display_date'] = df_weekly['date'].dt.strftime('%m-%d')
@@ -218,42 +243,35 @@ if portfolio:
     else:
         c1.info("데이터가 없습니다.")
     
-    # 2. 비중 차트
+    # 비중 차트
     df = pd.DataFrame(data)
     if not df.empty:
         pie_type = c2.radio("비중 보기 기준", ["종목별", "자산군별 (Stock/ETF)"], horizontal=True)
-        
-        if pie_type == "종목별":
-            fig_pie = px.pie(df, values='평가금액', names='종목', hole=0.5)
-        else:
-            fig_pie = px.pie(df, values='평가금액', names='종류', hole=0.5)
-            
+        col_name = '종목' if pie_type == "종목별" else '종류'
+        fig_pie = px.pie(df, values='평가금액', names=col_name, hole=0.5)
         fig_pie.update_layout(showlegend=False, margin=dict(t=10, b=10, l=10, r=10))
         fig_pie.update_traces(textposition='inside', textinfo='percent+label', insidetextorientation='horizontal')
         c2.plotly_chart(fig_pie, use_container_width=True)
     
-    # [상세 표]
-    st.subheader("📋 상세 현황")
-    
-    # [핵심] 평가금액 기준 내림차순 정렬 (큰 금액이 위로)
+    # [상세 표] 배당 정보 추가
+    st.subheader("📋 상세 현황 (배당 포함)")
     df_show = df.sort_values(by='평가금액', ascending=False).copy()
     
     st.dataframe(
         df_show,
         use_container_width=True,
         hide_index=True,
-        column_order=["종목", "종류", "수량", "평가금액", "수익", "수익률"], 
+        column_order=["종목", "수량", "평가금액", "수익률", "배당률(%)", "예상월배당"], # 컬럼 순서
         column_config={
             "종목": st.column_config.TextColumn("종목", help="티커명"),
-            "종류": st.column_config.TextColumn("Type"),
             "수량": st.column_config.NumberColumn("수량", format="%.2f"),
             "평가금액": st.column_config.NumberColumn("평가액", format="%d 원"),
-            "수익": st.column_config.NumberColumn("수익금", format="%d 원"),
-            "수익률": st.column_config.NumberColumn("수익률", format="%.2f %%")
+            "수익률": st.column_config.NumberColumn("수익률", format="%.2f %%"),
+            "배당률(%)": st.column_config.NumberColumn("배당률", format="%.1f %%"), # 내가 입력한 배당률
+            "예상월배당": st.column_config.NumberColumn("월 배당(예상)", format="%d 원"), # 계산된 월 현금
         }
     )
 
     if not df.empty:
         best = df.loc[df['수익'].idxmax()]
-        worst = df.loc[df['수익'].idxmin()]
-        st.caption(f"👑 Best: **{best['종목']}** (+{best['수익']:,.0f}원)  |  💧 Worst: **{worst['종목']}** ({worst['수익']:,.0f}원)")
+        st.caption(f"👑 Best: **{best['종목']}** (+{best['수익']:,.0f}원)")
