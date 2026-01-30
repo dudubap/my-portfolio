@@ -12,12 +12,6 @@
         "type": "ETF"
     },
     {
-        "ticker": "GLD",
-        "quantity": 3.1665,
-        "avg_cost": 302.31,
-        "type": "ETF"
-    },
-    {
         "ticker": "NVDA",
         "quantity": 9.292266,
         "avg_cost": 125.92,
@@ -142,6 +136,13 @@
         "quantity": 3.7716,
         "avg_cost": 190.51,
         "type": "Stock",
+        "currency": "USD"
+    },
+    {
+        "ticker": "GLD",
+        "quantity": 3.19513,
+        "avg_cost": 303.91,
+        "type": "ETF",
         "currency": "USD"
     }
 ]
