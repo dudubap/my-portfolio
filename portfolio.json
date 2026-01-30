@@ -12,12 +12,6 @@
         "type": "ETF"
     },
     {
-        "ticker": "GOOGL",
-        "quantity": 3.7468,
-        "avg_cost": 189.57,
-        "type": "Stock"
-    },
-    {
         "ticker": "GLD",
         "quantity": 3.1665,
         "avg_cost": 302.31,
@@ -141,6 +135,13 @@
         "quantity": 58.0,
         "avg_cost": 547.6755,
         "type": "ETF",
+        "currency": "USD"
+    },
+    {
+        "ticker": "GOOGL",
+        "quantity": 3.7716,
+        "avg_cost": 190.51,
+        "type": "Stock",
         "currency": "USD"
     }
 ]
