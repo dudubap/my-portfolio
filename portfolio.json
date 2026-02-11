@@ -18,12 +18,6 @@
         "type": "Stock"
     },
     {
-        "ticker": "QLD",
-        "quantity": 40.141776,
-        "avg_cost": 51.36,
-        "type": "ETF"
-    },
-    {
         "ticker": "JNJ",
         "quantity": 4.019422,
         "avg_cost": 162.67,
@@ -143,6 +137,13 @@
         "ticker": "JEPQ",
         "quantity": 26.7,
         "avg_cost": 52.94,
+        "type": "ETF",
+        "currency": "USD"
+    },
+    {
+        "ticker": "QLD",
+        "quantity": 42.44,
+        "avg_cost": 52.43,
         "type": "ETF",
         "currency": "USD"
     }
