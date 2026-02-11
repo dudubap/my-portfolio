@@ -111,13 +111,6 @@
         "currency": "USD"
     },
     {
-        "ticker": "GLD",
-        "quantity": 3.19513,
-        "avg_cost": 303.91,
-        "type": "ETF",
-        "currency": "USD"
-    },
-    {
         "ticker": "0052D0.KS",
         "quantity": 149.0,
         "avg_cost": 12795.0,
@@ -143,6 +136,13 @@
         "quantity": 1.899,
         "avg_cost": 192.75,
         "type": "Stock",
+        "currency": "USD"
+    },
+    {
+        "ticker": "GLD",
+        "quantity": 3.25,
+        "avg_cost": 306.68,
+        "type": "ETF",
         "currency": "USD"
     }
 ]
