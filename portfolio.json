@@ -42,12 +42,6 @@
         "type": "Stock"
     },
     {
-        "ticker": "JEPQ",
-        "quantity": 26.14354,
-        "avg_cost": 52.94,
-        "type": "ETF"
-    },
-    {
         "ticker": "O",
         "quantity": 88.9122,
         "avg_cost": 56.88686832628144,
@@ -142,6 +136,13 @@
         "ticker": "GLD",
         "quantity": 3.25,
         "avg_cost": 306.68,
+        "type": "ETF",
+        "currency": "USD"
+    },
+    {
+        "ticker": "JEPQ",
+        "quantity": 26.7,
+        "avg_cost": 52.94,
         "type": "ETF",
         "currency": "USD"
     }
