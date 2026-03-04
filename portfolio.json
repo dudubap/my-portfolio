@@ -73,13 +73,6 @@
         "currency": "USD"
     },
     {
-        "ticker": "458730.KS",
-        "quantity": 407.0,
-        "avg_cost": 12508.0,
-        "type": "ETF",
-        "currency": "KRW"
-    },
-    {
         "ticker": "JEPQ",
         "quantity": 26.7,
         "avg_cost": 52.94,
@@ -116,6 +109,13 @@
     },
     {
         "ticker": "VNQ",
+        "quantity": 417.0,
+        "avg_cost": 12557.0,
+        "type": "ETF",
+        "currency": "KRW"
+    },
+    {
+        "ticker": "458730.KS",
         "quantity": 417.0,
         "avg_cost": 12557.0,
         "type": "ETF",
