@@ -120,13 +120,6 @@
         "currency": "KRW"
     },
     {
-        "ticker": "GOOGL",
-        "quantity": 1.899,
-        "avg_cost": 192.75,
-        "type": "Stock",
-        "currency": "USD"
-    },
-    {
         "ticker": "GLD",
         "quantity": 3.25,
         "avg_cost": 306.68,
