@@ -1,11 +1,5 @@
 [
     {
-        "ticker": "VNQ",
-        "quantity": 4.0,
-        "avg_cost": 95.28,
-        "type": "ETF"
-    },
-    {
         "ticker": "TMF",
         "quantity": 71.0,
         "avg_cost": 52.59,
@@ -117,6 +111,13 @@
         "ticker": "360750.KS",
         "quantity": 81.0,
         "avg_cost": 21902.0,
+        "type": "ETF",
+        "currency": "KRW"
+    },
+    {
+        "ticker": "VNQ",
+        "quantity": 417.0,
+        "avg_cost": 12557.0,
         "type": "ETF",
         "currency": "KRW"
     }
