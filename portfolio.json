@@ -107,16 +107,16 @@
         "currency": "USD"
     },
     {
-        "ticker": "QLD",
-        "quantity": 42.44,
-        "avg_cost": 52.43,
+        "ticker": "GLD",
+        "quantity": 3.24,
+        "avg_cost": 314.03,
         "type": "ETF",
         "currency": "USD"
     },
     {
-        "ticker": "GLD",
-        "quantity": 3.24,
-        "avg_cost": 314.03,
+        "ticker": "QLD",
+        "quantity": 56.703,
+        "avg_cost": 56.06,
         "type": "ETF",
         "currency": "USD"
     }
