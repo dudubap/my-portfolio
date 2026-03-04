@@ -108,13 +108,6 @@
         "currency": "KRW"
     },
     {
-        "ticker": "VNQ",
-        "quantity": 417.0,
-        "avg_cost": 12557.0,
-        "type": "ETF",
-        "currency": "KRW"
-    },
-    {
         "ticker": "458730.KS",
         "quantity": 417.0,
         "avg_cost": 12557.0,
