@@ -65,13 +65,6 @@
         "dividend_yield": 0.0
     },
     {
-        "ticker": "ARKF",
-        "quantity": 1.7404,
-        "avg_cost": 52.45,
-        "type": "ETF",
-        "dividend_yield": 0.0
-    },
-    {
         "ticker": "UNH",
         "quantity": 2.1165,
         "avg_cost": 442.83,
