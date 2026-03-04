@@ -72,13 +72,6 @@
         "dividend_yield": 0.0
     },
     {
-        "ticker": "CRWV",
-        "quantity": 0.6528,
-        "avg_cost": 122.08,
-        "type": "Stock",
-        "dividend_yield": 0.0
-    },
-    {
         "ticker": "VOO",
         "quantity": 58.0,
         "avg_cost": 547.6755,
