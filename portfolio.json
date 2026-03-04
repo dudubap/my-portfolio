@@ -12,12 +12,6 @@
         "type": "ETF"
     },
     {
-        "ticker": "NVDA",
-        "quantity": 9.292266,
-        "avg_cost": 125.92,
-        "type": "Stock"
-    },
-    {
         "ticker": "JNJ",
         "quantity": 4.019422,
         "avg_cost": 162.67,
