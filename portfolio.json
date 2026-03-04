@@ -100,13 +100,6 @@
         "currency": "KRW"
     },
     {
-        "ticker": "GLD",
-        "quantity": 3.25,
-        "avg_cost": 306.68,
-        "type": "ETF",
-        "currency": "USD"
-    },
-    {
         "ticker": "JEPQ",
         "quantity": 26.7,
         "avg_cost": 52.94,
@@ -117,6 +110,13 @@
         "ticker": "QLD",
         "quantity": 42.44,
         "avg_cost": 52.43,
+        "type": "ETF",
+        "currency": "USD"
+    },
+    {
+        "ticker": "GLD",
+        "quantity": 3.24,
+        "avg_cost": 314.03,
         "type": "ETF",
         "currency": "USD"
     }
